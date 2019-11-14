@@ -1,6 +1,6 @@
 # Whist Scoreboard
 
-This is an early prototype of a scoreboard for military whist.
+This is an early prototype of a scoreboard for a variant of Military Whist.
 
 ## License and Warranty Disclaimer
 
