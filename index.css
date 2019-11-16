@@ -34,12 +34,15 @@ td {
 
 .table {
   width: 4rem;
+  min-width: 4rem;
 }
 .tally {
   width: 2rem;
+  min-width: 2rem;
 }
 .total {
   width: 4rem;
+  min-width: 4rem;
 }
 
 td.tally,

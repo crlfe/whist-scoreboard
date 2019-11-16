@@ -3,56 +3,23 @@
  * @license MIT
  */
 
+const { List, Map, Range, Record, Repeat } = window.Immutable;
 const { h, render } = window.preact;
 const { useEffect, useState, useRef } = window.preactHooks;
 
 function App() {
   const tableRef = useRef(null);
-  const [data, setData] = useLocalStorage("whist-scoreboard", {
-    rows: 4,
-    cols: 4,
-    values: [[0, 1, 0, 1], [1, 2, 3, 4], [4, 3, 2, 1], [0, 0, 1, 0]]
-  });
-
-  function getScore(row, col) {
-    return (data.values[row] || [])[col] || 0;
-  }
-
-  function setScore(row, col, value) {
-    const { rows, cols, values } = data;
-
-    const newValues = Array.from(values);
-    newValues[row] = Array.from(newValues[row]);
-    newValues[row][col] = value;
-    setData({ rows, cols, values: newValues });
-  }
-
-  function resizeData(rows, cols) {
-    let { values } = data;
-
-    const fixRows = values.length < rows;
-    const fixCols = values.some(xs => xs.length < cols);
-
-    if (fixRows || fixCols) {
-      const oldValues = values;
-      values = Array.from({ length: rows }, (_, row) =>
-        Array.from(
-          { length: cols },
-          (_, col) => ((oldValues || [])[row] || [])[col] || 0
-        )
-      );
-      console.log({ oldValues, values });
-    }
-    setData({ rows, cols, values });
-  }
+  const [data, setData] = useState(
+    Record({
+      rows: 4,
+      cols: 4,
+      values: Map()
+    })
+  );
 
   function onClear() {
     if (window.confirm("Do you really want to clear all scores to zero?")) {
-      const { rows, cols } = data;
-      const values = Array.from({ length: rows }, () =>
-        Array.from({ length: cols }, () => 0)
-      );
-      setData({ rows, cols, values });
+      setData(data.set("values", Map()));
     }
   }
 
@@ -65,7 +32,7 @@ function App() {
       if (input.files.length === 1) {
         input.files[0]
           .text()
-          .then(text => fileImport(text))
+          .then(text => fileLoad(text))
           .then(data => setData(data))
           .catch(err => {
             window.alert(err);
@@ -77,7 +44,7 @@ function App() {
 
   function onSave() {
     Promise.resolve(data)
-      .then(data => fileExport(data))
+      .then(data => fileSave(data))
       .then(text => {
         const date = new Date().toISOString().slice(0, 10);
         const link = document.createElement("a");
@@ -92,23 +59,29 @@ function App() {
 
   function onRowsChange(event) {
     const rows = parseInt(event.target.value);
-    if (rows > 0) {
-      resizeData(rows, data.cols);
+    if (rows > 0 && rows <= 100) {
+      setData(data.set("rows", rows));
     }
   }
 
   function onColsChange(event) {
     const cols = parseInt(event.target.value);
-    if (cols > 0) {
-      resizeData(data.rows, cols);
+    if (cols > 0 && cols <= 100) {
+      setData(data.set("cols", cols));
     }
   }
 
   function onClick(row, col, event) {
-    setScore(row, col, (getScore(row, col) + 1) % 5);
+    setData(
+      data.updateIn(
+        ["values", List.of(row, col)],
+        value => ((value || 0) + 1) % 5
+      )
+    );
   }
 
-  const { rows, cols, values } = data;
+  const rows = data.get("rows");
+  const cols = data.get("cols");
 
   return h("div", {}, [
     h("ul", {}, [
@@ -125,6 +98,7 @@ function App() {
           h("input", {
             type: "number",
             min: 1,
+            max: 100,
             value: rows,
             onChange: onRowsChange
           })
@@ -138,6 +112,7 @@ function App() {
           h("input", {
             type: "number",
             min: 1,
+            max: 100,
             value: cols,
             onChange: onColsChange
           })
@@ -153,77 +128,59 @@ function App() {
       ]),
       h("tr", {}, [
         h("td"),
-        Array.from({ length: cols }, (_, col) =>
-          h("th", { scope: "col", class: "tally" }, `${col + 1}`)
-        ),
+        Range(0, cols)
+          .map(col => h("th", { scope: "col", class: "tally" }, `${col + 1}`))
+          .toArray(),
         h("td"),
         h("td")
       ]),
-      Array.from({ length: rows }, (_, row) =>
-        h(ScoresRow, { row, cols, values: values[row], onClick })
-      )
+      Range(0, rows)
+        .map(row =>
+          h(ScoresRow, {
+            row,
+            cols,
+            values: data.get("values"),
+            onClick
+          })
+        )
+        .toArray()
     ])
   ]);
 }
 
 function ScoresRow({ row, cols, values, onClick }) {
-  values = values.slice(0, cols);
-
   const label = `${row + 1}`;
-  const total = values.reduce((a, c) => a + c, 0);
+  const total = Range(0, cols).reduce(
+    (a, col) => a + (values.get(List.of(row, col)) || 0),
+    0
+  );
 
   const TALLY = ["", "\u{1D369}", "\u{1D36A}", "\u{1D36B}", "\u{1D36C}"];
 
   return h("tr", { class: "scores" }, [
-    h("th", { scope: "row" }, label),
-    values.map((value, col) =>
-      h("td", { class: "tally" }, [
-        h(
-          "button",
-          { onClick: event => onClick(row, col, event) },
-          TALLY[value]
-        )
-      ])
-    ),
+    h("th", { scope: "row", class: "table" }, label),
+    Range(0, cols)
+      .map(col =>
+        h("td", { class: "tally" }, [
+          h(
+            "button",
+            { onClick: event => onClick(row, col, event) },
+            TALLY[values.get(List.of(row, col)) || 0]
+          )
+        ])
+      )
+      .toArray(),
     h("td"),
     h("td", { class: "total" }, String(total))
   ]);
 }
 
-function useLocalStorage(keyName, initialValue) {
-  const [getValue, setValue] = useState(() => {
-    window.localStorage.removeItem(keyName);
-    try {
-      const json = window.localStorage.getItem(keyName);
-      if (!json) {
-        return initialValue;
-      }
-      return JSON.parse(json);
-    } catch (err) {
-      console.error(err);
-      return initialValue;
-    }
-  });
-  function setLocalValue(value) {
-    if (value instanceof Function) {
-      value = value();
-    }
-    setValue(value);
-    try {
-      window.localStorage.setItem(keyName, JSON.stringify(value));
-    } catch (err) {
-      console.error(err);
-    }
-  }
-  return [getValue, setLocalValue];
+function fileLoad(src) {
+  throw new Error("Load is not yet implemented");
 }
 
-function fileImport(src) {
-  throw new Error("File import is not yet implemented");
-}
-
-function fileExport(src) {
-  throw new Error("File export is not yet implemented");
+function fileSave(src) {
+  throw new Error("Save is not yet implemented");
 }
 
 render(h(App), document.querySelector("main"));
