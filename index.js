@@ -155,7 +155,7 @@ function ScoresRow({ row, cols, values, onClick }) {
     0
   );
 
-  const TALLY = ["", "\u{1D369}", "\u{1D36A}", "\u{1D36B}", "\u{1D36C}"];
+  const TALLY = ["", "|", "||", "|||", "||||"];
 
   return h("tr", { class: "scores" }, [
     h("th", { scope: "row", class: "table" }, label),
