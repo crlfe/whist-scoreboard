@@ -84,11 +84,11 @@ function App() {
   const cols = data.get("cols");
 
   return h("div", {}, [
-    h("ul", {}, [
+    h("ul", { class: "toolbar" }, [
       h("li", {}, [
-        h("button", { onClick: onClear }, "Clear"),
-        h("button", { onClick: onLoad }, "Load"),
-        h("button", { onClick: onSave }, "Save")
+        h("button", { onClick: onClear }, "Clear")
+        // TODO: h("button", { onClick: onLoad }, "Load"),
+        // TODO: h("button", { onClick: onSave }, "Save")
       ]),
       h(
         "li",
@@ -100,7 +100,8 @@ function App() {
             min: 1,
             max: 100,
             value: rows,
-            onChange: onRowsChange
+            onChange: onRowsChange,
+            style: "margin-left: 0.5em"
           })
         ])
       ),
@@ -114,7 +115,8 @@ function App() {
             min: 1,
             max: 100,
             value: cols,
-            onChange: onColsChange
+            onChange: onColsChange,
+            style: "margin-left: 0.5em"
           })
         ])
       )

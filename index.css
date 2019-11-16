@@ -7,6 +7,17 @@ html {
   font-size: 16px;
 }
 
+ul.toolbar {
+  list-style: none;
+  margin: 0 0 1em 0;
+  padding: 0;
+}
+
+ul.toolbar > li {
+  display: inline-block;
+  padding-right: 1em;
+}
+
 table {
   border-collapse: collapse;
   border-spacing: 0;
