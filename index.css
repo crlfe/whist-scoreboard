@@ -1,0 +1,119 @@
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+td,
+th {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0;
+}
+
+tbody > tr:nth-child(odd) {
+  background-color: #ddd;
+}
+
+.table {
+  position: sticky;
+  left: 0;
+  width: 3rem;
+  min-width: 3rem;
+  z-index: 1;
+}
+
+.total {
+  position: sticky;
+  right: 0;
+  width: 3rem;
+  min-width: 3rem;
+  z-index: 1;
+}
+
+thead .table, thead .total {
+  background-color: #FFF;
+}
+
+tbody .table,
+tbody .tally,
+tbody .total {
+  border: 1px solid #000;
+}
+
+tbody > tr:nth-child(n + 2) > td,
+tbody > tr:nth-child(n + 2) > th {
+  border-top: none;
+}
+
+tbody > tr > td.tally {
+  border-left: none;
+}
+
+tbody > tr > td.tally:nth-last-child(2) {
+  border-right: none;
+}
+
+tbody .table,
+tbody .total {
+  background-color: #777;
+  color: #fff;
+  text-align: center;
+}
+
+tbody > tr:nth-child(odd) > .table,
+tbody > tr:nth-child(odd) > .total {
+  background-color: #555;
+}
+
+.menu-body {
+  display: none;
+  position: absolute;
+  z-index: 10;
+
+  width: 10rem;
+  background-color: #eee;
+  border: 1px solid #000;
+
+  margin: 0;
+  padding: 1rem;
+  list-style: none;
+
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.menu:hover .menu-body {
+  display: grid;
+}
+
+.menu-body input, .menu-body button {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+}
+
+.menu > li {
+  padding-bottom: 0.5rem;
+}
+
+.tally {
+  position: relative;
+}
+
+.tally > button {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.tally > button > img {
+  width: 2rem;
+  height: 2rem;
+  vertical-align: middle;
+}
