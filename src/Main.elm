@@ -5,6 +5,7 @@ import Dict exposing (Dict)
 import Html as H
 import Html.Attributes as HA
 import Html.Events as HE
+import Html.Lazy
 
 
 type alias Model =
@@ -15,9 +16,9 @@ type alias Model =
 
 
 type Msg
-    = ClearClick
-    | TablesInput String
+    = TablesInput String
     | GamesInput String
+    | ClearClick
     | CellClick Int Int
 
 
@@ -27,38 +28,16 @@ main =
 
 init : Model
 init =
-    { numTables = 10, numGames = 10, scores = Dict.empty }
+    { numTables = 30
+    , numGames = 30
+    , scores = Dict.empty
+    }
 
 
 view : Model -> H.Html Msg
 view model =
     H.div []
-        [ H.div []
-            [ H.label []
-                [ H.text "Tables"
-                , H.input
-                    [ HA.type_ "number"
-                    , HA.min "1"
-                    , HA.max "100"
-                    , HA.value (String.fromInt model.numTables)
-                    , HE.onInput TablesInput
-                    ]
-                    []
-                ]
-            , H.label []
-                [ H.text "Games"
-                , H.input
-                    [ HA.type_ "number"
-                    , HA.min "1"
-                    , HA.max "100"
-                    , HA.value (String.fromInt model.numGames)
-                    , HE.onInput GamesInput
-                    ]
-                    []
-                ]
-            , H.button [ HE.onClick ClearClick ] [ H.text "Clear" ]
-            ]
-        , H.table []
+        [ H.table []
             [ viewHead model |> H.thead []
             , List.range 1 model.numTables
                 |> List.map (viewRow model)
@@ -69,20 +48,50 @@ view model =
 
 viewHead model =
     [ H.tr []
-        [ H.th [ HA.scope "col" ] [ H.text "Table" ]
-        , H.th [ HA.colspan model.numGames, HA.scope "colgroup" ] [ H.text "Games" ]
-        , H.th [ HA.scope "col" ] [ H.text "Total" ]
+        [ H.td [ HA.class "menu" ]
+            [ H.button [] [ H.text "Menu" ]
+            , viewMenu model
+            ]
+        , H.th [ HA.colspan model.numGames ] [ H.text "Games" ]
+        , H.td [] []
         ]
-    , H.tr []
+    , H.tr
+        []
         (List.concat
-            [ [ H.td [] [] ]
+            [ [ H.th [ HA.class "table", HA.scope "col" ] [ H.text "Table" ] ]
             , List.range 1 model.numGames
                 |> List.map String.fromInt
                 |> List.map (\name -> H.th [ HA.scope "col" ] [ H.text name ])
-            , [ H.td [] [] ]
+            , [ H.th [ HA.class "total", HA.scope "col" ] [ H.text "Total" ] ]
             ]
         )
     ]
+
+
+viewMenu model =
+    H.div [ HA.class "menu-body" ]
+        [ H.label [ HA.for "numTables" ] [ H.text "Tables" ]
+        , H.input
+            [ HA.id "numTables"
+            , HA.type_ "number"
+            , HA.min "1"
+            , HA.max "50"
+            , HA.value (String.fromInt model.numTables)
+            , HE.onInput TablesInput
+            ]
+            []
+        , H.label [ HA.for "numGames" ] [ H.text "Games" ]
+        , H.input
+            [ HA.id "numGames"
+            , HA.type_ "number"
+            , HA.min "1"
+            , HA.max "50"
+            , HA.value (String.fromInt model.numGames)
+            , HE.onInput GamesInput
+            ]
+            []
+        , H.button [ HA.style "grid-column-end" "span 2", HE.onClick ClearClick ] [ H.text "Zero all scores" ]
+        ]
 
 
 viewRow model table =
@@ -94,18 +103,22 @@ viewRow model table =
     in
     H.tr []
         (List.concat
-            [ [ H.th [ HA.scope "row" ] [ H.text (String.fromInt table) ] ]
-            , List.range 1 model.numGames |> List.map (viewCell model table)
-            , [ H.td [] [ H.text (String.fromInt total) ] ]
+            [ [ H.th [ HA.class "table", HA.scope "row" ] [ H.text (String.fromInt table) ] ]
+            , List.range 1 model.numGames |> List.map (viewCellAt model table)
+            , [ H.td [ HA.class "total" ] [ H.text (String.fromInt total) ] ]
             ]
         )
 
 
-viewCell model table game =
-    let
-        value =
-            model.scores |> Dict.get ( table, game ) |> Maybe.withDefault 0
+viewCellAt model table game =
+    model.scores
+        |> Dict.get ( table, game )
+        |> Maybe.withDefault 0
+        |> viewCell model table game
 
+
+viewCell model table game value =
+    let
         imgAlt =
             String.fromInt value
 
@@ -129,14 +142,14 @@ viewImage value =
 update : Msg -> Model -> Model
 update msg model =
     case msg of
-        ClearClick ->
-            model
-
         TablesInput input ->
-            { model | numTables = String.toInt input |> Maybe.withDefault model.numTables |> clamp 1 100 }
+            { model | numTables = String.toInt input |> Maybe.withDefault model.numTables |> clamp 1 50 }
 
         GamesInput input ->
-            { model | numGames = String.toInt input |> Maybe.withDefault model.numGames |> clamp 1 100 }
+            { model | numGames = String.toInt input |> Maybe.withDefault model.numGames |> clamp 1 50 }
+
+        ClearClick ->
+            { model | scores = Dict.empty }
 
         CellClick table game ->
             { model | scores = model.scores |> incrementScoreAt table game }
