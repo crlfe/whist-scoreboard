@@ -1,6 +1,5 @@
 html,
-body,
-table {
+body {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -15,20 +14,24 @@ button {
 }
 
 table {
+  margin: 0 auto;
+  min-width: 30em;
+  max-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
 }
 
 .col-table,
-.col-total {
+.col-total,
+.col-table2 {
   width: 4rem;
   min-width: 4rem;
   max-width: 4rem;
 }
 
 .col-stretch {
-  width: 100%;
+  width: 0%;
   min-width: 0;
 }
 
@@ -44,6 +47,7 @@ th {
 .col-table,
 .col-total,
 .col-game,
+.col-table2,
 td,
 th,
 tr {
@@ -146,10 +150,10 @@ thead > tr:nth-child(2) > * {
 .hdr-games > span.title {
   position: sticky;
   left: 10rem;
-  right: 10rem;
+  right: 14rem;
 }
 
-.hdr-game {
+.hdr-game, thead td.col-stretch {
   background-color: #fff;
   z-index: 1;
 }
@@ -157,7 +161,9 @@ thead > tr:nth-child(2) > * {
 .hdr-table,
 .table,
 .hdr-total,
-.total {
+.total,
+.hdr-table2,
+.table2 {
   width: 4rem;
   min-width: 4rem;
   position: sticky;
@@ -166,12 +172,14 @@ thead > tr:nth-child(2) > * {
 }
 
 .hdr-table,
-.hdr-total {
+.hdr-total,
+.hdr-table2 {
   z-index: 3;
 }
 
 .table,
-.total {
+.total,
+.table2 {
   z-index: 1;
 }
 
@@ -183,6 +191,12 @@ thead > tr:nth-child(2) > * {
 
 .hdr-total,
 .total {
+  right: 4rem;
+  border-left: 1px solid #000;
+}
+
+.hdr-table2,
+.table2 {
   right: 0;
   border-left: 1px solid #000;
 }
@@ -215,15 +229,7 @@ td.score {
   padding: 0;
 }
 
-td.score > button {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: none;
-  border: none;
-}
-
-td.score > button > img {
+td.score > img {
   display: block;
   width: 100%;
   height: 100%;
@@ -247,8 +253,12 @@ td.score > button > img {
   .hdr-table,
   .table,
   .hdr-total,
-  .total {
+  .total,
+  .hdr-table2,
+  .table2 {
     position: relative;
+    left: auto;
+    right: auto;
   }
 }
 
