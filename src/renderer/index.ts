@@ -237,10 +237,17 @@ function App() {
         ].join(",")
       ];
       for (let i = 0; i < numTables; i++) {
-        const scores = scoreRows[i].slice(0, numGames);
-        lines.push(
-          [i + 1, ...scores, scores.reduce((a, c) => a + c, 0)].join(",")
-        );
+        const scores = scoreRows[i] || [];
+
+        const line = [String(i + 1)];
+        let total = 0;
+        for (let j = 0; j < numGames; j++) {
+          const score = scores[j] || 0;
+          total += score;
+          line.push(String(score));
+        }
+        line.push(String(total));
+        lines.push(line.join(","));
       }
       lines.push("");
 
@@ -351,7 +358,6 @@ function App() {
     ) {
       return;
     }
-    console.log(event.key);
     switch (event.key) {
       case "ArrowLeft":
         focusCellAt(row, col - 1);
