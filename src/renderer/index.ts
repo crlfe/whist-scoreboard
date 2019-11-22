@@ -191,12 +191,78 @@ function App() {
     setScoreRows(nextRows);
   }
 
+  // TODO: Verify whether the state setters can ever change.
   const handlers: any = {
     onOpen: useCallback(() => {
-      window.alert("Sorry, loading from file is not implemented yet.");
-    }, []),
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".csv,text/csv";
+      input.addEventListener("change", () => {
+        const files = input.files || [];
+        if (files.length == 0) {
+          return;
+        }
+        (files[files.length - 1] as any)
+          .text()
+          .then((text: String) => {
+            // TODO: Check for a header and only use "game \d+" columns.
+            const newRows = [];
+            for (const line of text.split(/[\r\n]+/)) {
+              const parts = line.split(",").map(part => part.trim());
+              if (parts.length > 2 && /^\d+$/.test(parts[0])) {
+                newRows.push(
+                  parts
+                    .slice(1, parts.length - 1)
+                    .map(part => parseInt(part, 10) || 0)
+                );
+              }
+            }
+            const newTables = newRows.length;
+            const newGames = newRows.reduce((a, c) => Math.max(a, c.length), 0);
+
+            setNumTables(newTables);
+            setNumGames(newGames);
+            setScoreRows(newRows);
+          })
+          .catch((err: any) => alert(err));
+      });
+      input.click();
+    }, [setNumTables, setNumGames, setScoreRows]),
     onSave: useCallback(() => {
-      window.alert("Sorry, saving to file is not implemented yet.");
+      const lines = [
+        [
+          "table",
+          ...Array.from({ length: numGames }, (_, i) => `game ${i + 1}`),
+          "total"
+        ].join(",")
+      ];
+      for (let i = 0; i < numTables; i++) {
+        const scores = scoreRows[i].slice(0, numGames);
+        lines.push(
+          [i + 1, ...scores, scores.reduce((a, c) => a + c, 0)].join(",")
+        );
+      }
+      lines.push("");
+
+      const date = new Date();
+      const ymd = [
+        date.getFullYear(),
+        ("00" + (date.getMonth() + 1)).slice(-2),
+        ("00" + date.getDate()).slice(-2)
+      ].join("-");
+      const file = new File([lines.join("\n")], `whist-${ymd}.csv`, {
+        type: "text/csv"
+      });
+      const url = window.URL.createObjectURL(file);
+
+      // Always revoke the URL after a minute to avoid memory leaks.
+      setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+
+      const a = document.createElement("a");
+      a.download = file.name;
+      a.href = url;
+      a.type = "text/csv";
+      a.click();
     }, []),
     onClear: useCallback(
       (event: Event) => {
