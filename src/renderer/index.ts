@@ -270,7 +270,7 @@ function App() {
       a.href = url;
       a.type = "text/csv";
       a.click();
-    }, []),
+    }, [numTables, numGames, scoreRows]),
     onClear: useCallback(
       (event: Event) => {
         if (window.confirm("Do you really want to erase all scores?")) {
