@@ -7,9 +7,9 @@
   "scripts": {
     "start-electron": "electron-webpack dev",
     "start-web": "webpack-dev-server --mode=development --open",
-    "build-linux": "electron-webpack app && electron-builder --linux=AppImage",
-    "build-windows": "electron-webpack app && electron-builder --win=portable",
-    "build-web": "webpack --mode=production"
+    "build-electron": "electron-webpack app",
+    "build-web": "webpack --mode=production",
+    "package-electron": "electron-builder"
   },
   "dependencies": {
     "postcss-svgo": "^4.0.2",

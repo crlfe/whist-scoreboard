@@ -1,0 +1,12 @@
+{
+  "linux": {
+    "target": [
+      "appimage"
+    ]
+  },
+  "win": {
+    "target": [
+      "portable"
+    ]
+  }
+}
