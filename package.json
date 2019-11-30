@@ -5,11 +5,11 @@
   "license": "BSD-3-Clause",
   "private": true,
   "scripts": {
-    "start:native": "electron-webpack dev",
-    "start:web": "webpack-dev-server --mode=development --open",
-    "build:linux": "electron-webpack app && electron-builder --linux=AppImage",
-    "build:windows": "electron-webpack app && electron-builder --win=portable",
-    "build:web": "webpack --mode=production"
+    "start-electron": "electron-webpack dev",
+    "start-web": "webpack-dev-server --mode=development --open",
+    "build-linux": "electron-webpack app && electron-builder --linux=AppImage",
+    "build-windows": "electron-webpack app && electron-builder --win=portable",
+    "build-web": "webpack --mode=production"
   },
   "dependencies": {
     "postcss-svgo": "^4.0.2",

@@ -1,5 +1,9 @@
 {
+  "main": {
+    "sourceDirectory": "src/electron"
+  },
   "renderer": {
-    "template": "src/renderer/index.html"
+    "sourceDirectory": "src/web",
+    "template": "src/web/index.html"
   }
 }

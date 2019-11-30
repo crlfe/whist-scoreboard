@@ -14,7 +14,7 @@ module.exports = (env, argv) => {
   return {
     mode: isProduction ? "production" : "development",
     entry: {
-      index: path.join(__dirname, "src/renderer/index.ts")
+      index: path.join(__dirname, "src/web/index.ts")
     },
     output: {
       filename: "[name].js",
@@ -61,7 +61,7 @@ module.exports = (env, argv) => {
       new HtmlWebpackPlugin({
         filename: "index.html",
         minify: isProduction,
-        template: path.join(__dirname, "src/renderer/index.html")
+        template: path.join(__dirname, "src/web/index.html")
       }),
       new LicenseWebpackPlugin({
         perChunkOutput: false
