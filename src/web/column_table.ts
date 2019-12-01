@@ -30,7 +30,11 @@ export class ColumnTable {
     return new ColumnTable(rows, cols, this.values);
   }
 
-  updated(row: number, col: number, updater: (v: number) => number) {
+  updated(
+    row: number,
+    col: number,
+    updater: (v: number) => number
+  ): ColumnTable {
     if (row < 0 || row >= this.rows || col < 0 || col >= this.cols) {
       return this;
     }

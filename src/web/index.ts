@@ -1,13 +1,7 @@
 import "./index.css";
 
-import { h, render } from "preact";
+import { Fragment, h, render, VNode } from "preact";
 import { useCallback, useMemo, useState, useEffect } from "preact/hooks";
-
-/*
-Tables and Games inputs can probably select() now that the incremental update is removed.
-Open and Save support
-Fix the getStatic to work in electron/webpack dev and prod
-*/
 
 interface State {
   numTables: number;
@@ -16,6 +10,66 @@ interface State {
 }
 
 const fillWidth = true;
+
+const LOCAL_NAME = "whist-scoreboard";
+const LOCAL_VERSION = 1;
+
+const LOCAL_DEFAULT = {
+  numTables: 15,
+  numGames: 20,
+  scoreRows: [[0]]
+};
+
+function localSave(state: State): void {
+  try {
+    const data = Object.assign({ version: LOCAL_VERSION }, state);
+    window.localStorage.setItem(LOCAL_NAME, JSON.stringify(data));
+  } catch (err) {
+    console.error(err);
+    try {
+      window.localStorage.removeItem(LOCAL_NAME);
+    } catch (err) {
+      /* Ignore failure to remove saved data. */
+    }
+  }
+}
+
+function localLoad(): State {
+  try {
+    const text = window.localStorage.getItem("whist-scoreboard");
+    if (text == null) {
+      return LOCAL_DEFAULT;
+    }
+
+    const data = JSON.parse(text);
+    if (data.version !== LOCAL_VERSION) {
+      throw new Error(`Unsupported version in local storage: ${data.version}`);
+    }
+
+    let { numTables, numGames, scoreRows } = data;
+
+    if (typeof numTables !== "number" || numTables < 1 || numTables > 100) {
+      numTables = LOCAL_DEFAULT.numTables;
+    }
+    if (typeof numGames !== "number" || numGames < 1 || numGames > 100) {
+      numGames = LOCAL_DEFAULT.numGames;
+    }
+    if (!Array.isArray(scoreRows)) {
+      scoreRows = LOCAL_DEFAULT.scoreRows;
+    }
+
+    return { numTables, numGames, scoreRows };
+  } catch (err) {
+    console.error(err);
+    try {
+      window.localStorage.removeItem(LOCAL_NAME);
+    } catch (err) {
+      /* Ignore failure to remove saved data. */
+    }
+
+    return LOCAL_DEFAULT;
+  }
+}
 
 function Header({
   numTables,
@@ -32,13 +86,13 @@ function Header({
   numGames: number;
   onOpen: () => void;
   onSave: () => void;
-  onClear: () => void;
+  onClear: (event: Event) => void;
   onAddGame: () => void;
   onRemoveGame: () => void;
   onSetTables: (value: string) => void;
   onSetGames: (value: string) => void;
-}) {
-  return [
+}): preact.VNode {
+  return h(Fragment, {}, [
     h("tr", {}, [
       h("th", { class: "hdr-table", scope: "col" }, [
         "Table",
@@ -126,10 +180,10 @@ function Header({
       h("td", { class: "hdr-total" }),
       h("td", { class: "hdr-table2" })
     ])
-  ];
+  ]);
 }
 
-function Cells({
+function renderCells({
   row,
   numGames,
   scores
@@ -137,7 +191,7 @@ function Cells({
   row: number;
   numGames: number;
   scores: number[];
-}) {
+}): VNode[] {
   if (!scores) {
     scores = [];
   }
@@ -149,7 +203,7 @@ function Cells({
 
   return [
     h("th", { class: "table", scope: "row" }, `${row + 1}`),
-    Array.from({ length: numGames }, (_, col) => {
+    ...Array.from({ length: numGames }, (_, col) => {
       const score = scores[col] || 0;
       return h(
         "td",
@@ -163,7 +217,7 @@ function Cells({
   ];
 }
 
-function App() {
+function App(): VNode {
   const initialState = useMemo(localLoad, []) as State;
 
   const [numTables, setNumTables] = useState(initialState.numTables);
@@ -174,7 +228,7 @@ function App() {
     localSave({ numTables, numGames, scoreRows });
   }, [numTables, numGames, scoreRows]);
 
-  function scrollToRightSoon() {
+  function scrollToRightSoon(): void {
     setTimeout(function() {
       window.scrollTo(document.body.scrollWidth, document.body.scrollTop);
     }, 0);
@@ -185,14 +239,14 @@ function App() {
     col: number,
     updater: (value: number) => number
   ): void {
-    let nextRows = Array.from(scoreRows);
+    const nextRows = Array.from(scoreRows);
     nextRows[row] = Array.from(nextRows[row] || []);
     nextRows[row][col] = updater(nextRows[row][col] || 0);
     setScoreRows(nextRows);
   }
 
   // TODO: Verify whether the state setters can ever change.
-  const handlers: any = {
+  const handlers = {
     onOpen: useCallback(() => {
       const input = document.createElement("input");
       input.type = "file";
@@ -202,29 +256,35 @@ function App() {
         if (files.length == 0) {
           return;
         }
-        (files[files.length - 1] as any)
-          .text()
-          .then((text: String) => {
-            // TODO: Check for a header and only use "game \d+" columns.
-            const newRows = [];
-            for (const line of text.split(/[\r\n]+/)) {
-              const parts = line.split(",").map(part => part.trim());
-              if (parts.length > 2 && /^\d+$/.test(parts[0])) {
-                newRows.push(
-                  parts
-                    .slice(1, parts.length - 1)
-                    .map(part => parseInt(part, 10) || 0)
-                );
-              }
-            }
-            const newTables = newRows.length;
-            const newGames = newRows.reduce((a, c) => Math.max(a, c.length), 0);
+        const reader = new FileReader();
+        reader.addEventListener("loadend", () => {
+          if (reader.error != null) {
+            alert(reader.error);
+            return;
+          }
 
-            setNumTables(newTables);
-            setNumGames(newGames);
-            setScoreRows(newRows);
-          })
-          .catch((err: any) => alert(err));
+          const text = String(reader.result);
+
+          // TODO: Check for a header and only use "game \d+" columns.
+          const newRows = [];
+          for (const line of text.split(/[\r\n]+/)) {
+            const parts = line.split(",").map(part => part.trim());
+            if (parts.length > 2 && /^\d+$/.test(parts[0])) {
+              newRows.push(
+                parts
+                  .slice(1, parts.length - 1)
+                  .map(part => parseInt(part, 10) || 0)
+              );
+            }
+          }
+          const newTables = newRows.length;
+          const newGames = newRows.reduce((a, c) => Math.max(a, c.length), 0);
+
+          setNumTables(newTables);
+          setNumGames(newGames);
+          setScoreRows(newRows);
+        });
+        reader.readAsText(files[0]);
       });
       input.click();
     }, [setNumTables, setNumGames, setScoreRows]),
@@ -328,14 +388,14 @@ function App() {
     return [-1, -1];
   }
 
-  function focusCellAt(row: number, col: number) {
+  function focusCellAt(row: number, col: number): void {
     const target = document.querySelector(`#score-${row}-${col}`);
     if (target) {
       (target as HTMLElement).focus();
     }
   }
 
-  function onClick(event: MouseEvent) {
+  function onClick(event: MouseEvent): void {
     const [row, col] = findCurrentCell(event);
     if (row >= 0) {
       event.preventDefault();
@@ -346,7 +406,7 @@ function App() {
     }
   }
 
-  function onKeydown(event: KeyboardEvent) {
+  function onKeydown(event: KeyboardEvent): void {
     const [row, col] = findCurrentCell(event);
     if (
       row < 0 ||
@@ -410,7 +470,7 @@ function App() {
       fillWidth && h("col", { class: "col-stretch" }),
       h("col", { class: "col-total" }),
       h("thead", {}, [
-        h(Header as any, {
+        h(Header, {
           numTables,
           numGames,
           ...handlers
@@ -420,7 +480,7 @@ function App() {
         h(
           "tr",
           { class: "score" },
-          Cells({
+          renderCells({
             row: i,
             numGames,
             scores: scoreRows[i]
@@ -438,66 +498,6 @@ function App() {
       ])
     ]
   );
-}
-
-const LOCAL_NAME = "whist-scoreboard";
-const LOCAL_VERSION = 1;
-
-const LOCAL_DEFAULT = {
-  numTables: 15,
-  numGames: 20,
-  scoreRows: [[0]]
-};
-
-function localSave(state: State) {
-  try {
-    const data = Object.assign({ version: LOCAL_VERSION }, state);
-    window.localStorage.setItem(LOCAL_NAME, JSON.stringify(data));
-  } catch (err) {
-    console.error(err);
-    try {
-      window.localStorage.removeItem(LOCAL_NAME);
-    } catch (err) {
-      /* Ignore failure to remove saved data. */
-    }
-  }
-}
-
-function localLoad(): State {
-  try {
-    const text = window.localStorage.getItem("whist-scoreboard");
-    if (text == null) {
-      return LOCAL_DEFAULT;
-    }
-
-    const data = JSON.parse(text);
-    if (data.version !== LOCAL_VERSION) {
-      throw new Error(`Unsupported version in local storage: ${data.version}`);
-    }
-
-    let { numTables, numGames, scoreRows } = data;
-
-    if (typeof numTables !== "number" || numTables < 1 || numTables > 100) {
-      numTables = LOCAL_DEFAULT.numTables;
-    }
-    if (typeof numGames !== "number" || numGames < 1 || numGames > 100) {
-      numGames = LOCAL_DEFAULT.numGames;
-    }
-    if (!Array.isArray(scoreRows)) {
-      scoreRows = LOCAL_DEFAULT.scoreRows;
-    }
-
-    return { numTables, numGames, scoreRows };
-  } catch (err) {
-    console.error(err);
-    try {
-      window.localStorage.removeItem(LOCAL_NAME);
-    } catch (err) {
-      /* Ignore failure to remove saved data. */
-    }
-
-    return LOCAL_DEFAULT;
-  }
 }
 
 render(h(App, {}), document.getElementById("app") as HTMLElement);

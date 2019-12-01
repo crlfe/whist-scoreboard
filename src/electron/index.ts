@@ -15,7 +15,7 @@ const applicationMenuTemplate = [
         {
           label: app.name,
           submenu: [
-            { role: "about" } as any,
+            { role: "about" },
             { type: "separator" },
             { role: "services" },
             { type: "separator" },
@@ -71,7 +71,7 @@ const applicationMenuTemplate = [
   }
 ];
 
-function createMainWindow() {
+function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
     webPreferences: { nodeIntegration: true }
   });
@@ -94,7 +94,11 @@ function createMainWindow() {
   return window;
 }
 
-Menu.setApplicationMenu(Menu.buildFromTemplate(applicationMenuTemplate as any));
+Menu.setApplicationMenu(
+  Menu.buildFromTemplate(
+    applicationMenuTemplate as Electron.MenuItemConstructorOptions[]
+  )
+);
 
 app.on("ready", () => {
   mainWindow = createMainWindow();
