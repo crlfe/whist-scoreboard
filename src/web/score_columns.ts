@@ -48,3 +48,25 @@ export class ScoreColumns {
     return new ScoreColumns(newColumns);
   }
 }
+
+/**
+ * Calls a function with values from 1 to n, inclusive.
+ * @param n The maximum value.
+ * @param each The function to call.
+ */
+export function forOneTo(n: number, each: (v: number) => void): void {
+  for (let i = 1; i <= n; i++) {
+    each(i);
+  }
+}
+
+/**
+ * Creates an array of length n with the results of calling a function with
+ * values from 1 to n, inclusive.
+ * @param n The maximum value.
+ * @param each The function to call.
+ * @return An array containing the result of each function call.
+ */
+export function mapOneTo<T>(n: number, each: (v: number) => T): T[] {
+  return Array.from({ length: n }, (_, i) => each(i + 1));
+}

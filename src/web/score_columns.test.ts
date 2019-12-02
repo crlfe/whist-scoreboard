@@ -1,4 +1,4 @@
-import { ScoreColumns } from "./score_columns";
+import { ScoreColumns, forOneTo, mapOneTo } from "./score_columns";
 
 test("empty is safe", () => {
   const s = new ScoreColumns([[]]);
@@ -74,4 +74,32 @@ test("updating preserves identify of unmodified columns", () => {
   expect(s0.column(1)).toBe(s1.column(1));
   expect(s0.column(2)).not.toBe(s1.column(2));
   expect(s0.column(3)).toBe(s1.column(3));
+});
+
+test("forOneTo zero", () => {
+  const each = jest.fn();
+  forOneTo(0, each);
+  expect(each).toBeCalledTimes(0);
+});
+
+test("forOneTo two", () => {
+  const each = jest.fn(i => i);
+  forOneTo(2, each);
+  expect(each).toBeCalledTimes(2);
+  expect(each).toHaveBeenNthCalledWith(1, 1);
+  expect(each).toHaveBeenNthCalledWith(2, 2);
+});
+
+test("mapOneTo zero", () => {
+  const each = jest.fn();
+  const r = mapOneTo(0, each);
+  expect(each).toBeCalledTimes(0);
+  expect(r).toHaveLength(0);
+});
+
+test("mapOneTo two", () => {
+  const each = jest.fn(i => i);
+  const r = mapOneTo(2, each);
+  expect(each).toBeCalledTimes(2);
+  expect(r).toEqual([1, 2]);
 });
