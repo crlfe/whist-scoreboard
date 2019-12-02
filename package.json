@@ -10,7 +10,7 @@
     "build-electron": "electron-webpack app",
     "build-web": "webpack --mode=production",
     "package-electron": "electron-builder",
-    "test-web": "jest",
+    "test": "jest",
     "lint": "eslint 'src/**/*.ts'"
   },
   "dependencies": {
