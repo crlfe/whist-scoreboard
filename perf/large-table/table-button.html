@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      html,
+      body,
+      table,
+      tr,
+      th,
+      td {
+        margin: 0;
+        padding: 0;
+      }
+      table {
+        width: 3440px;
+        position: relative;
+        border-collapse: separate;
+        border-spacing: 0;
+        text-align: center;
+      }
+
+      /* Fixed widths */
+      .table,
+      .total,
+      .table-right {
+        width: 80px;
+        min-width: 80px;
+        max-width: 80px;
+      }
+      .game,
+      .score {
+        width: 32px;
+        min-width: 32px;
+        max-width: 32px;
+      }
+
+      /* Fixed heights */
+      .table,
+      .games,
+      .game,
+      .total,
+      .table-right,
+      .score {
+        height: 32px;
+        min-height: 32px;
+        max-height: 32px;
+      }
+
+      button {
+        /* At least in Chrome Linux, label change with height of 100% causes a ~500ms layout. */
+        width: 32px;
+        height: 32px;
+        margin: 0;
+        padding: 0;
+        border: none;
+      }
+
+      /* Sticky cells */
+      .table,
+      .games,
+      .game,
+      .total,
+      .table-right {
+        background-color: #fff;
+        position: sticky;
+      }
+
+      thead .table {
+        top: 0;
+        left: 0;
+        z-index: 2;
+      }
+      thead .games {
+        top: 0px;
+        z-index: 1;
+      }
+      thead .games .title {
+        position: sticky;
+        left: 112px;
+        right: 192px;
+      }
+      thead .game {
+        top: 32px;
+        z-index: 1;
+      }
+      thead .total {
+        top: 0;
+        right: 80px;
+        z-index: 2;
+      }
+      thead .table-right {
+        top: 0;
+        right: 0;
+        z-index: 2;
+      }
+      tbody .table {
+        left: 0;
+        z-index: 1;
+      }
+      tbody .total {
+        right: 80px;
+        z-index: 1;
+      }
+      tbody .table-right {
+        right: 0;
+        z-index: 1;
+      }
+      tfoot .table {
+        bottom: 0;
+        left: 0;
+        z-index: 2;
+      }
+      tfoot .game {
+        bottom: 0;
+        z-index: 1;
+      }
+      tfoot .total {
+        bottom: 0;
+        right: 80px;
+        z-index: 2;
+      }
+      tfoot .table-right {
+        bottom: 0;
+        right: 0;
+        z-index: 2;
+      }
+    </style>
+  </head>
+  <body>
+    <table>
+      <colgroup>
+        <col class="table" />
+        <col class="game" />
+        <col class="total" />
+        <col class="table-right" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th scope="col" class="table" rowspan="2">Table</th>
+          <th class="games" colspan="100"><span class="title">Games</span></th>
+          <th scope="col" class="total" rowspan="2">Total</th>
+          <th scope="col" class="table-right" rowspan="2">
+            Table
+          </th>
+        </tr>
+        <tr>
+          <th class="game">1</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="table">
+          <th scope="row" h class="table">1</th>
+          <td class="score"><button>0</button></td>
+          <td class="total">0</td>
+          <th scope="row" class="table-right">1</th>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td class="table"></td>
+          <th class="game">1</th>
+          <td class="total"></td>
+          <td class="table-right"></td>
+        </tr>
+      </tfoot>
+    </table>
+    <script type="module">
+      function repeatNode(selector, callback) {
+        document.querySelectorAll(selector).forEach(template => {
+          const parent = template.parentNode;
+          const refNode = template.nextSibling;
+          for (let i = 2; i <= 100; i++) {
+            const copy = template.cloneNode(true);
+            if (callback) {
+              callback(copy, i);
+            }
+            parent.insertBefore(copy, refNode);
+          }
+          if (callback) {
+            callback(template, 1);
+          }
+        });
+      }
+      repeatNode("col.game");
+      repeatNode("th.game", (th, game) => {
+        th.textContent = `${game}`;
+      });
+      repeatNode("td.score");
+      repeatNode("tr.table", (tr, table) => {
+        tr.querySelectorAll("th.table, th.table-right").forEach(td => {
+          td.textContent = `${table}`;
+        });
+        tr.querySelectorAll("td.score button").forEach((button, i) => {
+          button.id = `score-${i + 1}-${table}`;
+        });
+      });
+      document.addEventListener(
+        "click",
+        event =>
+          (event.target.textContent =
+            ((parseInt(event.target.textContent) || 0) + 1) % 10)
+      );
+    </script>
+  </body>
+</html>
