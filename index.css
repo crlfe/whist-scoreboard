@@ -234,8 +234,8 @@ td.score {
 
 td.score > img {
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 2rem;
+  height: 2rem;
 }
 
 @media print {
