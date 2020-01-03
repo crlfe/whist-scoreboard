@@ -6,11 +6,21 @@ html {
   display: grid;
   place-items: center;
   font: caption;
+  line-height: 1.5;
 }
 
 body {
   margin: 0;
   padding: 0;
+}
+
+button {
+  font-size: inherit;
+}
+
+input {
+  box-sizing: border-box;
+  font-size: inherit;
 }
 
 #app {
