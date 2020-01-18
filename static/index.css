@@ -14,27 +14,39 @@ body {
   padding: 0;
 }
 
+label {
+  align-self: center;
+}
+
 input {
   box-sizing: border-box;
   font: inherit;
-  width: 100%;
-  height: 100%;
   padding: 0.25em;
 }
 
 button {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+
   font: inherit;
+  line-height: 1;
+  white-space: nowrap;
+
+  display: grid;
+  align-content: center;
+  justify-content: center;
+}
+
+img {
   width: 100%;
   height: 100%;
-  padding: 0;
 }
 
 .sButton {
-  padding: 0;
-  font-size: 50%;
   width: auto;
   height: auto;
+  font-size: 0.5rem;
   margin: 0.125rem 0.0625rem 0.0625rem 0.125rem;
 }
 
@@ -72,7 +84,7 @@ button {
 }
 
 .sWin {
-  background-color: #f99;
+  background-color: #9f9;
 }
 
 .sMain {
@@ -204,19 +216,19 @@ button {
 .aDialog {
   min-width: 15rem;
   max-width: 80%;
-  grid-template-rows: 2.5rem minmax(2rem, 1fr) 2rem;
+  grid-template-rows: 2.5rem minmax(1.5rem, 1fr) 2.5rem;
 }
 
 .tDialog {
   min-width: 20rem;
   max-width: 80%;
-  grid-template-rows: 2.5rem 2rem minmax(2rem, 1fr) 2rem 2rem;
+  grid-template-rows: 2.5rem 2.5rem minmax(2rem, 1fr) 1.5rem 2.5rem;
 }
 
 .tTitle,
 .aTitle {
   margin: -0.5rem -0.5rem 0 -0.5rem;
-  padding: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
 
   display: grid;
   grid-template-rows: 2rem;
@@ -224,6 +236,10 @@ button {
   place-items: center stretch;
 
   font-weight: bold;
+}
+
+.tX, .aX {
+  align-self: stretch;
 }
 
 .aTitle {
@@ -237,9 +253,8 @@ button {
 .tFields {
   display: grid;
   grid-gap: 0.5rem;
-  grid-auto-rows: 2rem;
+  grid-auto-rows: 2,5rem;
   grid-template-columns: 3.5rem 5rem 1fr;
-  place-items: center stretch;
 }
 
 .tError {
@@ -252,7 +267,7 @@ button {
 
 .aMessage {
   display: grid;
-  place-items: center stretch;
+  place-items: center;
 }
 
 .tMessage {
@@ -265,7 +280,4 @@ button {
   display: grid;
   grid-gap: 0.5rem;
   grid-auto-flow: column;
-  grid-template-rows: 2rem;
-  grid-auto-columns: 1fr;
-  place-items: center stretch;
 }

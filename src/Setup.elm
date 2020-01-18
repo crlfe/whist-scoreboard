@@ -34,7 +34,8 @@ view model =
         [ H.div [ HA.class "tTitle" ]
             [ H.text "Setup"
             , H.button
-                [ HA.disabled model.inert
+                [ HA.class "tX"
+                , HA.disabled model.inert
                 , HE.onClick (GotSetupMsg CancelClicked)
                 ]
                 [ H.text "X"
@@ -140,10 +141,28 @@ updateInternal msg model setup =
             ( { model | setup = Just { setup | newValues = Array.empty } }, Cmd.none )
 
         LoadClicked ->
-            ( model, Cmd.none )
+            ( { model
+                | setup = Just { setup | inert = True }
+                , alert =
+                    Just
+                        { title = "Error"
+                        , body = [ H.text "Load has not yet been implemented" ]
+                        }
+              }
+            , Cmd.none
+            )
 
         SaveClicked ->
-            ( model, Cmd.none )
+            ( { model
+                | setup = Just { setup | inert = True }
+                , alert =
+                    Just
+                        { title = "Error"
+                        , body = [ H.text "Save has not yet been implemented" ]
+                        }
+              }
+            , Cmd.none
+            )
 
         TitleChanged title ->
             ( { model | setup = Just { setup | title = title } }, Cmd.none )

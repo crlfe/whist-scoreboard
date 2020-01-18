@@ -62,19 +62,19 @@ view model =
         , viewRight sheet.tables sheet.marks sheet.totals sheet.ranks
         , viewTop sheet.games sheet.marks
         , H.div [ HA.class "sTopLeft sDark" ]
-            [ H.button
+            [ H.div
+                [ HA.class "sBox"
+                , gridArea 1 1 3 2
+                ]
+                [ H.text "Tables"
+                ]
+            , H.button
                 [ HA.class "sButton"
                 , gridArea 1 1 2 2
                 , HA.disabled model.sheet.inert
                 , HE.onClick (GotSheetMsg SetupClicked)
                 ]
                 [ H.text "Setup" ]
-            , H.div
-                [ HA.class "sBox"
-                , gridArea 1 1 3 2
-                ]
-                [ H.text "Tables"
-                ]
             ]
         , H.div
             [ HA.class "sTopRight sDark"
@@ -209,7 +209,12 @@ viewMainCell game table value =
             , String.fromInt table
             ]
         ]
-        [ H.img [ HA.src (String.concat [ "tally-", String.fromInt value, ".svg" ]) ] [] ]
+        [ H.img
+            [ HA.src (String.concat [ "tally-", String.fromInt value, ".svg" ])
+            , HA.draggable "false"
+            ]
+            []
+        ]
 
 
 viewLeft : Int -> SheetModelMarks -> H.Html Msg
@@ -330,10 +335,10 @@ rightWidth : Maybe a -> String
 rightWidth ranks =
     case ranks of
         Just _ ->
-            "12.0625rem"
+            "12rem"
 
         Nothing ->
-            "8.0625rem"
+            "8rem"
 
 
 viewTop : Int -> SheetModelMarks -> H.Html Msg
@@ -910,7 +915,7 @@ randomValues : Int -> Int -> Int -> Array2 Int
 randomValues majors minors seed =
     let
         gen =
-            Random.map (\n -> round (4 * n ^ 3)) (Random.float 0 1)
+            Random.map (\n -> round (3.5 * (n ^ 10) + 0.3)) (Random.float 0 1)
     in
     Array2.fromGenerator majors minors (Random.step gen) (Random.initialSeed seed)
         |> Tuple.first

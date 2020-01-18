@@ -11,7 +11,7 @@ view model =
     H.div [ HA.class "aDialog" ]
         [ H.div [ HA.class "aTitle" ]
             [ H.text model.title
-            , H.button [ HE.onClick (GotAlertMsg CloseClicked) ]
+            , H.button [ HA.class "aX", HE.onClick (GotAlertMsg CloseClicked) ]
                 [ H.text "X"
                 ]
             ]
