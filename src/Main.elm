@@ -15,6 +15,7 @@ import Scores exposing (Scores)
 import Setup
 import Sheet
 import Task
+import Time
 
 
 port storage : JD.Value -> Cmd msg
@@ -37,6 +38,7 @@ type alias Model =
 
 type Msg
     = Noop
+    | StartingGotTime ( Time.Zone, Time.Posix )
     | SheetMsg Sheet.Msg
     | SetupMsg Setup.Msg
     | ErrorMsg Int
@@ -62,15 +64,23 @@ init flags =
     let
         scores =
             importStorage flags.storage
-                |> Maybe.withDefault (Scores.zero "Whist Event" 22 18)
+
+        model =
+            { scores =
+                scores
+                    |> Maybe.withDefault (Scores.zero "Whist Event" 22 18)
+            , sheet = Sheet.init
+            , setup = Nothing
+            , error = Nothing
+            }
+                |> updateSheetSize flags.width flags.height
     in
-    ( { scores = scores
-      , sheet = Sheet.init
-      , setup = Nothing
-      , error = Nothing
-      }
-        |> updateSheetSize flags.width flags.height
-    , Cmd.none
+    ( model
+    , if scores == Nothing then
+        Task.perform StartingGotTime (Task.map2 Tuple.pair Time.here Time.now)
+
+      else
+        Cmd.none
     )
 
 
@@ -175,6 +185,15 @@ update msg model =
     case msg of
         Noop ->
             ( model, Cmd.none )
+
+        StartingGotTime ( here, now ) ->
+            let
+                scores =
+                    model.scores
+            in
+            ( { model | scores = { scores | title = Scores.datedTitle here now } }
+            , Cmd.none
+            )
 
         SheetMsg m ->
             Sheet.update m (sheetOptions model) model.sheet

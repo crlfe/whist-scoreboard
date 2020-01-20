@@ -12,6 +12,7 @@ import Html.Events as HE
 import Scores exposing (Scores)
 import Scores.Csv
 import Task
+import Time
 
 
 type alias Options m =
@@ -34,6 +35,7 @@ type alias Model =
 type Msg
     = Noop
     | ClearClicked
+    | ClearingGotTime ( Time.Zone, Time.Posix )
     | LoadClicked
     | LoadingGotFile File.File
     | LoadingGotData File.File String
@@ -154,7 +156,19 @@ update msg options model =
             ( model, Cmd.none )
 
         ClearClicked ->
-            ( { model | values = Array.empty }, Cmd.none )
+            ( model
+            , Task.perform
+                (ClearingGotTime >> options.route)
+                (Task.map2 Tuple.pair Time.here Time.now)
+            )
+
+        ClearingGotTime ( here, now ) ->
+            ( { model
+                | title = Scores.datedTitle here now
+                , values = Array.empty
+              }
+            , Cmd.none
+            )
 
         LoadClicked ->
             ( model
