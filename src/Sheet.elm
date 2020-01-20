@@ -344,7 +344,7 @@ viewTopRight options model =
               ]
             , if model.showRanks then
                 [ H.div [ cssClasses.label, gridArea 1 3 3 4 ] []
-                , H.div [ cssClasses.center, gridArea 2 3 3 4 ] [ H.text "Ranks" ]
+                , H.div [ cssClasses.center, gridArea 2 3 3 4 ] [ H.text "Rank" ]
                 ]
 
               else
