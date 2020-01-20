@@ -32,7 +32,8 @@ type alias Model =
 
 
 type Msg
-    = ClearClicked
+    = Noop
+    | ClearClicked
     | LoadClicked
     | LoadingGotFile File.File
     | LoadingGotData File.File String
@@ -149,6 +150,9 @@ viewMain options model =
 update : Msg -> Options m -> Model -> ( Model, Cmd m )
 update msg options model =
     case msg of
+        Noop ->
+            ( model, Cmd.none )
+
         ClearClicked ->
             ( { model | values = Array.empty }, Cmd.none )
 

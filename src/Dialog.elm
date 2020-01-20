@@ -24,6 +24,7 @@ type alias Model =
 
 type alias ModelAction =
     { text : String
+    , id : Maybe String
     , disabled : Bool
     }
 
@@ -38,7 +39,7 @@ cssClasses =
 
 action : String -> ModelAction
 action text =
-    { text = text, disabled = False }
+    { text = text, id = Nothing, disabled = False }
 
 
 defaults : Model
@@ -118,12 +119,22 @@ viewFooter options model =
 
 viewFooterAction : Options m -> Model -> Msg -> ModelAction -> H.Html m
 viewFooterAction options model index am =
-    H.button
-        [ cssClasses.action
-        , HA.disabled (options.disabled || am.disabled)
-        , HE.onClick (options.route index)
-        ]
-        [ H.text am.text ]
+    let
+        attrs =
+            [ cssClasses.action
+            , HA.disabled (options.disabled || am.disabled)
+            , HE.onClick (options.route index)
+            ]
+                |> (\rest ->
+                        case am.id of
+                            Just id ->
+                                HA.id id :: rest
+
+                            Nothing ->
+                                rest
+                   )
+    in
+    H.button attrs [ H.text am.text ]
 
 
 handleKeyDown : KeyboardEvent -> Options m -> Model -> Maybe m

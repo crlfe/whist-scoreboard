@@ -1,5 +1,6 @@
 module Common exposing
     ( KeyboardEvent
+    , arrayGet2
     , arrayMapOne
     , cssClasses
     , decodeKeyboardEvent
@@ -73,6 +74,12 @@ cssClasses =
         , center = HA.class "sCenter"
         }
     }
+
+
+arrayGet2 : Int -> Int -> Array (Array a) -> Maybe a
+arrayGet2 i j xs =
+    Array.get i xs
+        |> Maybe.andThen (Array.get j)
 
 
 decodeKeyboardEvent : JD.Decoder KeyboardEvent
