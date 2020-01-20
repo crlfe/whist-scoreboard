@@ -28,13 +28,14 @@ type alias Model =
 
 
 type Msg
-    = SheetMsg Sheet.Msg
+    = Noop
+    | SheetMsg Sheet.Msg
     | SetupMsg Setup.Msg
     | ErrorMsg Int
     | SheetIncremented Int Int
     | SheetSetup
     | SetupClosed Scores
-    | SetupError String
+    | ShowError String
     | InitialViewport Browser.Dom.Viewport
     | WindowResized Int Int
 
@@ -101,6 +102,9 @@ viewError text =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Noop ->
+            ( model, Cmd.none )
+
         SheetMsg m ->
             Sheet.update m (sheetOptions model) model.sheet
                 |> Tuple.mapFirst (\s -> { model | sheet = s })
@@ -125,12 +129,14 @@ update msg model =
             ( { model | scores = scores }, Cmd.none )
 
         SheetSetup ->
-            ( { model | setup = Just (Setup.init model.scores) }, Cmd.none )
+            ( { model | setup = Just (Setup.init model.scores) }
+            , Task.attempt (\_ -> Noop) (Browser.Dom.focus "sTitle")
+            )
 
         SetupClosed scores ->
             ( { model | scores = scores, setup = Nothing }, Cmd.none )
 
-        SetupError error ->
+        ShowError error ->
             ( { model | error = Just error }, Cmd.none )
 
         InitialViewport info ->
@@ -199,7 +205,7 @@ setupOptions model =
     { disabled = Maybe.Extra.isJust model.error
     , route = SetupMsg
     , onClose = SetupClosed
-    , onError = SetupError
+    , onError = ShowError
     }
 
 

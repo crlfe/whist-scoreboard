@@ -85,9 +85,21 @@ dialogModel model =
 viewMain : Options m -> Model -> List (H.Html m)
 viewMain options model =
     [ H.div [ cssClasses.menu ]
-        [ H.button [ HE.onClick (options.route ClearClicked) ] [ H.text "Clear" ]
-        , H.button [ HE.onClick (options.route LoadClicked) ] [ H.text "Load" ]
-        , H.button [ HE.onClick (options.route SaveClicked) ] [ H.text "Save" ]
+        [ H.button
+            [ HA.disabled options.disabled
+            , HE.onClick (options.route ClearClicked)
+            ]
+            [ H.text "Clear" ]
+        , H.button
+            [ HA.disabled options.disabled
+            , HE.onClick (options.route LoadClicked)
+            ]
+            [ H.text "Load" ]
+        , H.button
+            [ HA.disabled options.disabled
+            , HE.onClick (options.route SaveClicked)
+            ]
+            [ H.text "Save" ]
         ]
     , H.div [ cssClasses.fields ]
         [ H.label [ HA.for "sTitle" ] [ H.text "Title" ]

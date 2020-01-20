@@ -66,10 +66,10 @@ view options model =
             xif model.showRanks 4.0 3.0
 
         minWidthInEm =
-            labelColumns * 4.0 + 4.0 * 2.0 + 2.0
+            labelColumns * 4.0 + 4.5 * 2.0
 
         heightInEm =
-            (2.0 + toFloat options.scores.tables) * 1.5 + 2.0
+            (2.0 + toFloat options.scores.tables + 1.5) * 1.5
 
         scale =
             min
@@ -88,7 +88,6 @@ view options model =
         [ HA.id "sheet"
         , cssClasses.sheet
         , HA.style "font-size" (String.fromFloat scale ++ "px")
-        , HA.tabindex (xif options.disabled -1 0)
         , HE.onFocus (options.route Focused)
         , HE.onBlur (options.route Blurred)
         , dataEventMouseDown options.route
@@ -326,6 +325,7 @@ viewTopLeft options model =
         , H.div [ cssClasses.center, gridArea 2 1 3 2 ] [ H.text "Table" ]
         , H.button
             [ cssClasses.button
+            , HA.disabled options.disabled
             , HE.onClick (options.route SetupClicked)
             , gridArea 1 1 2 2
             ]
@@ -351,6 +351,7 @@ viewTopRight options model =
                 []
             , [ H.button
                     [ cssClasses.button
+                    , HA.disabled options.disabled
                     , HE.onClick (options.route ShowHideRanksClicked)
                     , if model.showRanks then
                         gridArea 1 3 2 4
