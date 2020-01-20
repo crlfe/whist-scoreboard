@@ -511,7 +511,8 @@ dataEventMouseDown route =
     JD.field "target" decodeDataEvent
         |> JD.andThen (processDataEvent >> unwrapToDecoder)
         |> JD.map route
-        |> HE.on "mousedown"
+        |> JD.map (\msg -> { message = msg, preventDefault = True, stopPropagation = True })
+        |> HE.custom "mousedown"
 
 
 decodeDataEvent : JD.Decoder String
