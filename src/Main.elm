@@ -16,7 +16,9 @@ import Task
 
 
 type alias Flags =
-    ()
+    { width : Float
+    , height : Float
+    }
 
 
 type alias Model =
@@ -36,7 +38,6 @@ type Msg
     | SheetSetup
     | SetupClosed Scores
     | ShowError String
-    | InitialViewport Browser.Dom.Viewport
     | WindowResized Int Int
 
 
@@ -51,7 +52,7 @@ main =
 
 
 init : Flags -> ( Model, Cmd Msg )
-init _ =
+init flags =
     let
         scores =
             Scores.fromLists "Arbitrary title"
@@ -68,7 +69,8 @@ init _ =
       , setup = Nothing
       , error = Nothing
       }
-    , Task.perform InitialViewport Browser.Dom.getViewport
+        |> updateSheetSize flags.width flags.height
+    , Cmd.none
     )
 
 
@@ -138,9 +140,6 @@ update msg model =
 
         ShowError error ->
             ( { model | error = Just error }, Cmd.none )
-
-        InitialViewport info ->
-            ( updateSheetSize info.viewport.width info.viewport.height model, Cmd.none )
 
         WindowResized width height ->
             ( updateSheetSize (toFloat width) (toFloat height) model, Cmd.none )
