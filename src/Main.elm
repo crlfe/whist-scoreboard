@@ -1,12 +1,42 @@
-module Main exposing (main)
+module Main exposing (Model, main)
 
-import Alert
 import Browser
+import Browser.Dom
+import Browser.Events
+import Common exposing (KeyboardEvent, decodeKeyboardEvent)
+import Dialog
 import Html as H
 import Html.Attributes as HA
+import Json.Decode as JD
+import Maybe.Extra
+import Scores exposing (Scores)
 import Setup
 import Sheet
-import State exposing (..)
+import Task
+
+
+type alias Flags =
+    ()
+
+
+type alias Model =
+    { scores : Scores
+    , sheet : Sheet.Model
+    , setup : Maybe Setup.Model
+    , error : Maybe String
+    }
+
+
+type Msg
+    = SheetMsg Sheet.Msg
+    | SetupMsg Setup.Msg
+    | ErrorMsg Int
+    | SheetIncremented Int Int
+    | SheetSetup
+    | SetupClosed Scores
+    | SetupError String
+    | InitialViewport Browser.Dom.Viewport
+    | WindowResized Int Int
 
 
 main : Program Flags Model Msg
@@ -19,83 +49,162 @@ main =
         }
 
 
-type alias Flags =
-    ()
-
-
 init : Flags -> ( Model, Cmd Msg )
 init _ =
     let
-        sheet =
-            Sheet.init
+        scores =
+            Scores.fromLists "Arbitrary title"
+                [ [ 1, 4, 1, 1, 0, 1, 1, 2, 0 ]
+                , [ 0, 0, 1, 1, 0, 1, 1, 2, 1 ]
+                , [ 1, 3, 1, 1, 0, 1, 1, 2, 0 ]
+                , [ 2, 0, 1, 1, 0, 1, 1, 2, 2 ]
+                , [ 0, 0, 1, 1, 0, 1, 1, 2, 1 ]
+                , [ 1, 0, 1, 1, 0, 1, 1, 2, 0 ]
+                ]
     in
-    ( { sheet = sheet
-      , setup =
-            if True then
-                Nothing
-
-            else
-                Just
-                    { inert = False
-                    , title = sheet.title
-                    , games = String.fromInt sheet.games
-                    , tables = String.fromInt sheet.tables
-                    , oldValues = sheet.values
-                    , newValues = sheet.values
-                    }
-      , alert =
-            if True then
-                Nothing
-
-            else
-                Just
-                    { title = "Error"
-                    , body = [ H.text "This is a text message." ]
-                    }
+    ( { scores = scores
+      , sheet = Sheet.init
+      , setup = Nothing
+      , error = Nothing
       }
-    , Cmd.none
+    , Task.perform InitialViewport Browser.Dom.getViewport
     )
 
 
 view : Model -> Browser.Document Msg
 view model =
-    let
-        popups =
-            List.filterMap
-                identity
-                [ Maybe.map Setup.view model.setup
-                , Maybe.map Alert.view model.alert
-                ]
-    in
-    { title = model.sheet.title
+    { title = model.scores.title
     , body =
-        Sheet.view model
-            :: (if List.isEmpty popups then
-                    []
-
-                else
-                    H.div [ HA.class "barrier" ] []
-                        :: popups
-               )
+        Maybe.Extra.values
+            [ Just (Sheet.view (sheetOptions model) model.sheet)
+            , maybeViewBarrier model
+            , Maybe.map (Setup.view (setupOptions model)) model.setup
+            , Maybe.map viewError model.error
+            ]
     }
+
+
+maybeViewBarrier : Model -> Maybe (H.Html msg)
+maybeViewBarrier model =
+    if Maybe.Extra.isJust model.setup || Maybe.Extra.isJust model.error then
+        Just (H.div [ HA.class "barrier" ] [])
+
+    else
+        Nothing
+
+
+viewError : String -> H.Html Msg
+viewError text =
+    Dialog.view errorOptions Dialog.error [ H.text text ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotSheetMsg m ->
-            Sheet.update m model
+        SheetMsg m ->
+            Sheet.update m (sheetOptions model) model.sheet
+                |> Tuple.mapFirst (\s -> { model | sheet = s })
 
-        GotSetupMsg m ->
-            Setup.update m model
+        SetupMsg m ->
+            case model.setup of
+                Just setup ->
+                    Setup.update m (setupOptions model) setup
+                        |> Tuple.mapFirst (\s -> { model | setup = Just s })
 
-        GotAlertMsg m ->
-            Alert.update m model
+                Nothing ->
+                    ( model, Cmd.none )
 
-        Ignored ->
-            ( model, Cmd.none )
+        ErrorMsg _ ->
+            ( { model | error = Nothing }, Cmd.none )
+
+        SheetIncremented table game ->
+            let
+                scores =
+                    Scores.mapOne (\v -> modBy 5 (v + 1)) table game model.scores
+            in
+            ( { model | scores = scores }, Cmd.none )
+
+        SheetSetup ->
+            ( { model | setup = Just (Setup.init model.scores) }, Cmd.none )
+
+        SetupClosed scores ->
+            ( { model | scores = scores, setup = Nothing }, Cmd.none )
+
+        SetupError error ->
+            ( { model | error = Just error }, Cmd.none )
+
+        InitialViewport info ->
+            ( updateSheetSize info.viewport.width info.viewport.height model, Cmd.none )
+
+        WindowResized width height ->
+            ( updateSheetSize (toFloat width) (toFloat height) model, Cmd.none )
+
+
+updateSheetSize : Float -> Float -> Model -> Model
+updateSheetSize width height model =
+    let
+        sheet =
+            model.sheet
+    in
+    { model | sheet = { sheet | maxWidth = width, maxHeight = height } }
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    Sub.batch
+        [ Browser.Events.onKeyDown (decodeKeyDown model)
+        , Browser.Events.onResize WindowResized
+        ]
+
+
+decodeKeyDown : Model -> JD.Decoder Msg
+decodeKeyDown model =
+    decodeKeyboardEvent
+        |> JD.andThen
+            (\event ->
+                Maybe.Extra.unwrap
+                    (JD.fail "ignored input")
+                    JD.succeed
+                    (handleKeyDown model event)
+            )
+
+
+handleKeyDown : Model -> KeyboardEvent -> Maybe Msg
+handleKeyDown model event =
+    case model.error of
+        Just _ ->
+            Dialog.handleKeyDown event errorOptions Dialog.error
+
+        Nothing ->
+            case model.setup of
+                Just setup ->
+                    Setup.handleKeyDown event (setupOptions model) setup
+
+                Nothing ->
+                    Sheet.handleKeyDown event (sheetOptions model) model.sheet
+
+
+sheetOptions : Model -> Sheet.Options Msg
+sheetOptions model =
+    { disabled = Maybe.Extra.isJust model.error || Maybe.Extra.isJust model.setup
+    , scores = model.scores
+    , route = SheetMsg
+    , onIncrement = SheetIncremented
+    , onSetup = SheetSetup
+    }
+
+
+setupOptions : Model -> Setup.Options Msg
+setupOptions model =
+    { disabled = Maybe.Extra.isJust model.error
+    , route = SetupMsg
+    , onClose = SetupClosed
+    , onError = SetupError
+    }
+
+
+errorOptions : Dialog.Options Msg
+errorOptions =
+    { disabled = False
+    , route = ErrorMsg
+    }
