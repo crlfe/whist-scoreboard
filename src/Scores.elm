@@ -114,8 +114,6 @@ totals : Scores -> Array Int
 totals scores =
     Array.map (Array.foldl (+) 0) scores.values
 
-
-
 -- RANKING
 
 
