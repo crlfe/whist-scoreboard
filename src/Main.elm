@@ -55,14 +55,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         scores =
-            Scores.fromLists "Arbitrary title"
-                [ [ 1, 4, 1, 1, 0, 1, 1, 2, 0 ]
-                , [ 0, 0, 1, 1, 0, 1, 1, 2, 1 ]
-                , [ 1, 3, 1, 1, 0, 1, 1, 2, 0 ]
-                , [ 2, 0, 1, 1, 0, 1, 1, 2, 2 ]
-                , [ 0, 0, 1, 1, 0, 1, 1, 2, 1 ]
-                , [ 1, 0, 1, 1, 0, 1, 1, 2, 0 ]
-                ]
+            Scores.zero "Whist Event" 22 18
     in
     ( { scores = scores
       , sheet = Sheet.init
