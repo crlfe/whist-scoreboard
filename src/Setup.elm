@@ -3,10 +3,15 @@ module Setup exposing (Model, Msg, Options, handleKeyDown, init, update, view)
 import Array exposing (Array)
 import Common exposing (KeyboardEvent, sendMessage)
 import Dialog
+import File
+import File.Download
+import File.Select
 import Html as H
 import Html.Attributes as HA
 import Html.Events as HE
 import Scores exposing (Scores)
+import Scores.Csv
+import Task
 
 
 type alias Options m =
@@ -29,6 +34,8 @@ type alias Model =
 type Msg
     = ClearClicked
     | LoadClicked
+    | LoadingGotFile File.File
+    | LoadingGotData File.File String
     | SaveClicked
     | TitleChanged String
     | TablesChanged String
@@ -147,12 +154,43 @@ update msg options model =
 
         LoadClicked ->
             ( model
-            , sendMessage (options.onError "Load has not been implemented yet")
+            , File.Select.file [ ".csv", "text/csv" ] (LoadingGotFile >> options.route)
             )
+
+        LoadingGotFile file ->
+            ( model
+            , Task.perform (LoadingGotData file >> options.route) (File.toString file)
+            )
+
+        LoadingGotData file data ->
+            let
+                title =
+                    if String.endsWith ".csv" (File.name file) then
+                        String.dropRight 4 (File.name file)
+
+                    else
+                        File.name file
+            in
+            case Scores.Csv.decode title data of
+                Ok scores ->
+                    ( { model
+                        | title = scores.title
+                        , tables = String.fromInt scores.tables
+                        , games = String.fromInt scores.games
+                        , values = scores.values
+                      }
+                    , Cmd.none
+                    )
+
+                Err error ->
+                    ( model, sendMessage (options.onError error) )
 
         SaveClicked ->
             ( model
-            , sendMessage (options.onError "Save has not been implemented yet")
+            , File.Download.string
+                (model.title ++ ".csv")
+                "text/csv"
+                (Scores.Csv.encode (toScores model))
             )
 
         TitleChanged title ->

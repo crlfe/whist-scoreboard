@@ -10,7 +10,9 @@ decode title string =
     let
         raw : Array (Array String)
         raw =
-            splitCsv string |> Array.map (String.split "," >> Array.fromList)
+            splitLines string
+                |> Array.filter (\line -> String.trim line /= "")
+                |> Array.map (String.split "," >> Array.fromList)
 
         header =
             findHeader raw
@@ -112,8 +114,8 @@ countUntilGameHeader h ( i, r ) =
         ( i, r )
 
 
-splitCsv : String -> Array String
-splitCsv string =
+splitLines : String -> Array String
+splitLines string =
     let
         step : Char -> ( Bool, Array Char, Array String ) -> ( Bool, Array Char, Array String )
         step c ( afterCr, line, result ) =
