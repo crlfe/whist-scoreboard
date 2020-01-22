@@ -4,9 +4,9 @@
   xmlns="http://www.w3.org/2000/svg"
   x="0px"
   y="0px"
-  width="31px"
-  height="23px"
-  viewBox="0 0 31 23"
+  width="32px"
+  height="32px"
+  viewBox="0 0 11 11"
 >
   <style>
     rect {
@@ -14,7 +14,6 @@
       fill: #000;
     }
   </style>
-  <rect x="8" y="4" width="3" height="15" />
-  <rect x="14" y="4" width="3" height="15" />
-  <rect x="20" y="4" width="3" height="15" />
+  <rect x="4" y="2" width="1" height="7" />
+  <rect x="6" y="2" width="1" height="7" />
 </svg>

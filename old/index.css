@@ -1,0 +1,267 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+button {
+  box-sizing: border-box;
+  height: 1.5rem;
+  padding: 0;
+  margin: 0;
+}
+
+table {
+  margin: 0 auto;
+  min-width: 30rem;
+  max-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.col-table,
+.col-total,
+.col-table2 {
+  width: 4rem;
+  min-width: 4rem;
+  max-width: 4rem;
+}
+
+.col-stretch {
+  width: 0%;
+  min-width: 0;
+}
+
+.col-game,
+td,
+th {
+  width: 2rem;
+  min-width: 2rem;
+  max-width: 2rem;
+  text-align: center;
+}
+
+.col-table,
+.col-total,
+.col-game,
+.col-table2,
+td,
+th,
+tr {
+  height: 2rem;
+  min-height: 2rem;
+  max-height: 2rem;
+  padding: 0;
+  margin: 0;
+}
+
+.tools-left {
+  position: absolute;
+  top: 0.2rem;
+  left: 4.2rem;
+  z-index: 10;
+}
+.tools-left:focus-within > ul {
+  display: block;
+}
+
+.tools-left > button {
+  width: 5rem;
+}
+
+.tools-left > ul {
+  display: none;
+
+  position: absolute;
+  top: 1.5rem;
+  width: 15rem;
+  left: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px outset;
+  background-color: #ddd;
+  color: #000;
+
+  list-style: none;
+  text-align: left;
+
+  font-family: sans-serif;
+  font-weight: normal;
+  font: menu;
+  font-size: 0.8rem;
+}
+
+.tools-left > ul > li {
+  margin: 0.5rem;
+}
+
+.tools-left > ul button {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  text-align: left;
+}
+
+.tools-left > ul input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.input-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.tools-right {
+  position: absolute;
+  top: 0.2rem;
+  right: 4.2rem;
+  width: 5rem;
+  z-index: 10;
+}
+
+.tools-right > button {
+  box-sizing: border-box;
+  width: 2.5rem;
+}
+
+thead > tr:nth-child(1) > * {
+  position: sticky;
+  top: 0;
+}
+
+thead > tr:nth-child(2) > * {
+  position: sticky;
+  top: 2rem;
+  border-bottom: 1px outset #000;
+}
+
+.hdr-games {
+  background-color: #fff;
+  z-index: 2;
+}
+
+.hdr-games > span.title {
+  position: sticky;
+  left: 10rem;
+  right: 14rem;
+}
+
+.hdr-game,
+thead td.col-stretch {
+  background-color: #fff;
+  font-size: 1.3rem;
+  z-index: 1;
+}
+
+.hdr-table,
+.table,
+.hdr-total,
+.total,
+.hdr-table2,
+.table2 {
+  width: 4rem;
+  min-width: 4rem;
+  position: sticky;
+  background-color: #777;
+  color: #fff;
+}
+
+.hdr-table,
+.hdr-total,
+.hdr-table2 {
+  z-index: 3;
+}
+
+.table,
+.total,
+.table2 {
+  font-size: 1.3rem;
+  z-index: 1;
+}
+
+.hdr-table,
+.table {
+  left: 0;
+  border-right: 1px solid #000;
+}
+
+.hdr-total,
+.total {
+  right: 4rem;
+  border-left: 1px solid #000;
+}
+
+.hdr-table2,
+.table2 {
+  right: 0;
+  border-left: 1px solid #000;
+}
+
+tr.score {
+  user-select: none;
+}
+
+tr.score > td,
+tr.score > th {
+  border-bottom: 1px solid #000;
+}
+
+.score + td.score,
+.score + tr.score {
+  border-left: 1px solid #000;
+}
+
+.score + .col-stretch {
+  border-left: 1px solid #000;
+}
+
+tr.score:nth-child(2n + 1) {
+  background-color: #ddd;
+}
+
+td.score {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+td.score > img {
+  display: block;
+  width: 2rem;
+  height: 2rem;
+}
+
+@media print {
+  html,
+  body,
+  table {
+    width: auto;
+    height: auto;
+  }
+
+  .tools-left {
+    display: none;
+  }
+  .tools-right {
+    display: none;
+  }
+
+  .hdr-table,
+  .table,
+  .hdr-total,
+  .total,
+  .hdr-table2,
+  .table2 {
+    position: relative;
+    left: auto;
+    right: auto;
+  }
+}
+
