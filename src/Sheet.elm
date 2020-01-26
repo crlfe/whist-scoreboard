@@ -402,7 +402,7 @@ update msg options model =
             ( clearSelection model, sendMessage options.onSetup )
 
         ShowHideRanksClicked ->
-            ( { model | showRanks = not model.showRanks }, Cmd.none )
+            ( updateShowHideRanksClicked model, Cmd.none )
 
         TablePressed table ->
             updateTablePressed table options model
@@ -426,6 +426,15 @@ update msg options model =
             ( clearSelection model
             , Task.attempt (\_ -> options.route Blurred) (Browser.Dom.blur "sheet")
             )
+
+
+updateShowHideRanksClicked : Model -> Model
+updateShowHideRanksClicked model =
+    let
+        cleared =
+            clearSelection model
+    in
+    { cleared | showRanks = not model.showRanks }
 
 
 updateTablePressed : Int -> Options m -> Model -> ( Model, Cmd m )
