@@ -65,6 +65,7 @@ cssClasses =
         , games = HA.class "sGames"
         , curr = HA.class "sCurr"
         , currGame = HA.class "sCurrGame"
+        , currGameTotal = HA.class "sCurrGameTotal"
         , currTable = HA.class "sCurrTable"
         , mark = HA.class "sMark"
         , dark = HA.class "sDark"

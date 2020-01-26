@@ -100,8 +100,9 @@ view options model =
         , viewRight (Scores.totals options.scores) ranks
         , viewTopMarks options.scores.games model
         , viewTop options.scores.games model
-        , viewTopLeft options model
         , viewTopRight options model
+        , viewTopOverlay options model
+        , viewTopLeft options model
         ]
 
 
@@ -286,19 +287,17 @@ viewRight totals ranks =
 viewTopMarks : Int -> Model -> H.Html m
 viewTopMarks games model =
     H.div [ cssClasses.top, cssClasses.dark, gridFixedRows 2, gridFixedColumns games ]
-        (List.concat
-            [ case model.currGame of
-                Just game ->
-                    [ H.div
-                        [ cssClasses.currGame
-                        , gridArea 2 (game + 1) -1 (game + 2)
-                        ]
-                        []
+        (case model.currGame of
+            Just game ->
+                [ H.div
+                    [ cssClasses.currGame
+                    , gridArea 2 (game + 1) -1 (game + 2)
                     ]
-
-                _ ->
                     []
-            ]
+                ]
+
+            _ ->
+                []
         )
 
 
@@ -393,6 +392,39 @@ viewRankLabel name index value =
                 ]
     in
     H.div attrs [ H.text (String.fromInt value) ]
+
+
+viewTopOverlay : Options m -> Model -> H.Html m
+viewTopOverlay options model =
+    H.div
+        [ cssClasses.top
+        , HA.style "pointer-events" "none"
+        , gridFixedRows 2
+        , gridFixedColumns options.scores.games
+        ]
+        (case model.currGame of
+            Just game ->
+                let
+                    total =
+                        Array.map (Array.get game >> Maybe.withDefault 0) options.scores.values
+                            |> Array.foldl (+) 0
+                in
+                [ H.div
+                    [ cssClasses.currGame
+                    , cssClasses.box
+                    , HA.style "position" "absolute"
+                    , HA.style "width" "4.9375em"
+                    , HA.style "height" "1.4375em"
+                    , HA.style "display" "grid"
+                    , HA.style "place-items" "center"
+                    , gridArea 1 (game + 1) 2 (game + 2)
+                    ]
+                    [ H.text ("Total: " ++ String.fromInt total) ]
+                ]
+
+            _ ->
+                []
+        )
 
 
 update : Msg -> Options m -> Model -> ( Model, Cmd m )
@@ -518,7 +550,7 @@ dataEvent parts =
 
 dataEventMouseDown : (Msg -> m) -> H.Attribute m
 dataEventMouseDown route =
-    JD.field "target" decodeDataEvent
+    JD.field "target" (JD.oneOf [ decodeDataEvent, JD.succeed "" ])
         |> JD.andThen (processDataEvent >> unwrapToDecoder)
         |> JD.map route
         |> JD.map (\msg -> { message = msg, preventDefault = True, stopPropagation = True })
@@ -560,7 +592,7 @@ processDataEvent event =
                 (String.toInt gameStr)
 
         _ ->
-            Nothing
+            Just Blurred
 
 
 unwrapToDecoder : Maybe Msg -> JD.Decoder Msg
