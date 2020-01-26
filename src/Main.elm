@@ -41,7 +41,7 @@ type Msg
     | StartingGotTime ( Time.Zone, Time.Posix )
     | SheetMsg Sheet.Msg
     | SetupMsg Setup.Msg
-    | ErrorMsg Int
+    | ErrorClosed
     | SheetIncremented Int Int
     | SheetSetup
     | SetupClosed Scores
@@ -177,7 +177,7 @@ maybeViewBarrier model =
 
 viewError : String -> H.Html Msg
 viewError text =
-    Dialog.view errorOptions Dialog.error [ H.text text ]
+    Dialog.view errorOptions [ H.text text ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -208,7 +208,7 @@ update msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
-        ErrorMsg _ ->
+        ErrorClosed ->
             ( { model | error = Nothing }, Cmd.none )
 
         SheetIncremented table game ->
@@ -283,7 +283,7 @@ handleKeyDown : Model -> KeyboardEvent -> Maybe Msg
 handleKeyDown model event =
     case model.error of
         Just _ ->
-            Dialog.handleKeyDown event errorOptions Dialog.error
+            Dialog.handleKeyDown event errorOptions
 
         Nothing ->
             case model.setup of
@@ -315,6 +315,4 @@ setupOptions model =
 
 errorOptions : Dialog.Options Msg
 errorOptions =
-    { disabled = False
-    , route = ErrorMsg
-    }
+    Dialog.error ErrorClosed

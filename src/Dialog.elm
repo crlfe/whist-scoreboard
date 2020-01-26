@@ -1,4 +1,4 @@
-module Dialog exposing (Model, ModelAction, Msg, Options, action, defaults, error, handleKeyDown, view)
+module Dialog exposing (Options, defaults, error, handleKeyDown, view)
 
 import Common exposing (KeyboardEvent, xif)
 import Html as H
@@ -8,84 +8,66 @@ import Html.Events as HE
 
 type alias Options m =
     { disabled : Bool
-    , route : Int -> m
-    }
-
-
-type alias Model =
-    { title : String
+    , title : String
     , titleColor : String
     , headerColor : String
-    , close : Maybe Int
-    , enter : Maybe Int
-    , actions : List ModelAction
+    , footer : List (H.Html m)
+    , onClose : Maybe m
+    , onEnter : Maybe m
     }
-
-
-type alias ModelAction =
-    { text : String
-    , id : Maybe String
-    , disabled : Bool
-    }
-
-
-type alias Msg =
-    Int
 
 
 cssClasses =
     Common.cssClasses.dialog
 
 
-action : String -> ModelAction
-action text =
-    { text = text, id = Nothing, disabled = False }
-
-
-defaults : Model
+defaults : Options m
 defaults =
-    { title = "Message"
+    { disabled = False
+    , title = "Message"
     , titleColor = "#000"
     , headerColor = "#AAF"
-    , close = Just -1
-    , enter = Nothing
-    , actions = []
+    , onClose = Nothing
+    , onEnter = Nothing
+    , footer = []
     }
 
 
-error : Model
-error =
+error : m -> Options m
+error onClose =
     { defaults
         | title = "Error"
         , headerColor = "#F88"
-        , enter = Just 0
-        , actions =
-            [ action "OK" ]
+        , onClose = Just onClose
+        , onEnter = Just onClose
+        , footer =
+            [ H.button [ HE.onClick onClose ] [ H.text "OK" ]
+            ]
     }
 
 
-view : Options m -> Model -> List (H.Html m) -> H.Html m
-view options model body =
+view : Options m -> List (H.Html m) -> H.Html m
+view options body =
     H.div [ cssClasses.dialog ] <|
-        viewHeader options model
+        viewHeader options
             ++ body
-            ++ viewFooter options model
+            ++ viewFooter options
 
 
-viewHeader : Options m -> Model -> List (H.Html m)
-viewHeader options model =
+viewHeader : Options m -> List (H.Html m)
+viewHeader options =
     [ H.header
-        [ HA.style "background-color" model.headerColor
+        [ HA.style "background-color" options.headerColor
         ]
         (H.div
             [ cssClasses.title
-            , HA.style "color" model.titleColor
+            , HA.style "color" options.titleColor
             , HA.style "opacity" (xif options.disabled "25%" "100%")
             ]
-            [ H.text model.title ]
-            :: (case model.close of
-                    Just _ ->
-                        [ viewHeaderClose options model ]
+            [ H.text options.title ]
+            :: (case options.onClose of
+                    Just onClose ->
+                        [ viewHeaderClose options onClose ]
 
                     Nothing ->
                         []
@@ -94,9 +76,9 @@ viewHeader options model =
     ]
 
 
-viewHeaderClose : Options m -> Model -> H.Html m
-viewHeaderClose options model =
-    H.button [ HA.disabled options.disabled, HE.onClick (options.route -1) ]
+viewHeaderClose : Options m -> m -> H.Html m
+viewHeaderClose options onClose =
+    H.button [ HA.disabled options.disabled, HE.onClick onClose ]
         [ H.img
             [ HA.src "close.svg"
             , HA.alt "Close"
@@ -106,42 +88,16 @@ viewHeaderClose options model =
         ]
 
 
-viewFooter : Options m -> Model -> List (H.Html m)
-viewFooter options model =
-    if List.isEmpty model.actions then
-        []
-
-    else
-        [ H.footer []
-            (List.indexedMap (viewFooterAction options model) model.actions)
-        ]
+viewFooter : Options m -> List (H.Html m)
+viewFooter options =
+    [ H.footer [] options.footer ]
 
 
-viewFooterAction : Options m -> Model -> Msg -> ModelAction -> H.Html m
-viewFooterAction options model index am =
-    let
-        attrs =
-            [ cssClasses.action
-            , HA.disabled (options.disabled || am.disabled)
-            , HE.onClick (options.route index)
-            ]
-                |> (\rest ->
-                        case am.id of
-                            Just id ->
-                                HA.id id :: rest
-
-                            Nothing ->
-                                rest
-                   )
-    in
-    H.button attrs [ H.text am.text ]
-
-
-handleKeyDown : KeyboardEvent -> Options m -> Model -> Maybe m
-handleKeyDown event options model =
+handleKeyDown : KeyboardEvent -> Options m -> Maybe m
+handleKeyDown event options =
     case event.key of
         "Escape" ->
-            Maybe.map options.route model.close
+            options.onClose
 
         _ ->
             Nothing

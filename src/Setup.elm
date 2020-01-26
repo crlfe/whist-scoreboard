@@ -33,8 +33,7 @@ type alias Model =
 
 
 type Msg
-    = Noop
-    | ClearClicked
+    = ClearClicked
     | ClearingGotTime ( Time.Zone, Time.Posix )
     | LoadClicked
     | LoadingGotFile File.File
@@ -43,7 +42,8 @@ type Msg
     | TitleChanged String
     | TablesChanged String
     | GamesChanged String
-    | DialogAction Int
+    | CancelClicked
+    | OkClicked
 
 
 cssClasses =
@@ -64,30 +64,34 @@ view : Options m -> Model -> H.Html m
 view options model =
     Dialog.view
         (dialogOptions options model)
-        (dialogModel model)
         (viewMain options model)
 
 
 dialogOptions : Options m -> Model -> Dialog.Options m
 dialogOptions options model =
-    { disabled = options.disabled
-    , route = DialogAction >> options.route
-    }
-
-
-dialogModel : Model -> Dialog.Model
-dialogModel model =
     let
         defaults =
             Dialog.defaults
+
+        inputHasError =
+            lengthError model.tables /= "" || lengthError model.games /= ""
     in
     { defaults
-        | title = "Setup"
-        , close = Just -1
-        , enter = Just 1
-        , actions =
-            [ Dialog.action "Cancel"
-            , Dialog.action "OK" |> disableWhenError model
+        | disabled = options.disabled
+        , title = "Setup"
+        , onClose = Just (options.route CancelClicked)
+        , onEnter = Just (options.route OkClicked)
+        , footer =
+            [ H.button
+                [ HA.disabled options.disabled
+                , HE.onClick (options.route CancelClicked)
+                ]
+                [ H.text "Cancel" ]
+            , H.button
+                [ HA.disabled (options.disabled || inputHasError)
+                , HE.onClick (options.route OkClicked)
+                ]
+                [ H.text "Ok" ]
             ]
     }
 
@@ -152,9 +156,6 @@ viewMain options model =
 update : Msg -> Options m -> Model -> ( Model, Cmd m )
 update msg options model =
     case msg of
-        Noop ->
-            ( model, Cmd.none )
-
         ClearClicked ->
             ( model
             , Task.perform
@@ -220,27 +221,11 @@ update msg options model =
         GamesChanged games ->
             ( { model | games = games }, Cmd.none )
 
-        DialogAction index ->
-            ( model
-            , sendMessage
-                (options.onClose
-                    (if index < 1 then
-                        model.oldScores
+        CancelClicked ->
+            ( model, sendMessage (options.onClose model.oldScores) )
 
-                     else
-                        toScores model
-                    )
-                )
-            )
-
-
-disableWhenError : Model -> { a | disabled : Bool } -> { a | disabled : Bool }
-disableWhenError model a =
-    if lengthError model.tables /= "" || lengthError model.games /= "" then
-        { a | disabled = True }
-
-    else
-        a
+        OkClicked ->
+            ( model, sendMessage (options.onClose (toScores model)) )
 
 
 valuesStatus : Model -> H.Html msg
@@ -320,4 +305,4 @@ toScores model =
 
 handleKeyDown : KeyboardEvent -> Options m -> Model -> Maybe m
 handleKeyDown event options model =
-    Dialog.handleKeyDown event (dialogOptions options model) (dialogModel model)
+    Dialog.handleKeyDown event (dialogOptions options model)
