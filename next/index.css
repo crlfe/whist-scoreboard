@@ -183,7 +183,7 @@ select, input {
   padding: 0;
 
   display: grid;
-  place-items: stretch;
+  place-items: center;
 }
 
 .sBox > img {
@@ -192,14 +192,6 @@ select, input {
 }
 
 .sLabel {
-  border: 0.0625em solid #000;
-  margin: 0 -0.0625em -0.0625em 0;
-
-  display: grid;
-  place-items: center;
-}
-
-.sCenter {
   display: grid;
   place-items: center;
 }
@@ -209,6 +201,11 @@ select, input {
 .sRanks {
   display: grid;
   grid: auto-flow 1.5em / 1fr;
+}
+
+.sTotals,
+.sRanks {
+  font-weight: bold;
 }
 
 .sCurr {
