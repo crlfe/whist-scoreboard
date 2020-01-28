@@ -203,6 +203,11 @@ input {
   grid: auto-flow 1.5em / 1fr;
 }
 
+.sTotals,
+.sRanks {
+  font-weight: bold;
+}
+
 .sCurr {
   background-color: #0f0;
 }
