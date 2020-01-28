@@ -6,13 +6,15 @@ import Common exposing (KeyboardEvent, sendMessage, xif)
 import Html as H
 import Html.Attributes as HA
 import Html.Events as HE
+import Intl
 import Json.Decode as JD
 import Scores exposing (Scores)
 import Task
 
 
 type alias Options m =
-    { disabled : Bool
+    { loc : Intl.Localized
+    , disabled : Bool
     , scores : Scores
     , route : Msg -> m
     , onIncrement : Int -> Int -> m
@@ -99,7 +101,7 @@ view options model =
         , viewLeft options.scores.tables
         , viewRight (Scores.totals options.scores) ranks
         , viewTopMarks options.scores.games model
-        , viewTop options.scores.games model
+        , viewTop options.scores.games options model
         , viewTopRight options model
         , viewTopOverlay options model
         , viewTopLeft options model
@@ -301,8 +303,8 @@ viewTopMarks games model =
         )
 
 
-viewTop : Int -> Model -> H.Html m
-viewTop games model =
+viewTop : Int -> Options m -> Model -> H.Html m
+viewTop games options model =
     H.div [ cssClasses.top ]
         [ H.div [ cssClasses.box, cssClasses.label ]
             [ H.span
@@ -310,7 +312,7 @@ viewTop games model =
                 , HA.style "left" "4.5em"
                 , HA.style "right" (xif model.showRanks "12.5em" "8.5em")
                 ]
-                [ H.text "Games" ]
+                [ H.text options.loc.labels.games ]
             ]
         , H.div [ cssClasses.games ]
             (List.map (\i -> viewWide "game" i (i + 1)) (List.range 0 (games - 1)))
@@ -321,14 +323,15 @@ viewTopLeft : Options m -> Model -> H.Html m
 viewTopLeft options model =
     H.div [ cssClasses.topLeft, cssClasses.dark ]
         [ H.div [ cssClasses.box, gridArea 1 1 3 2 ] []
-        , H.div [ cssClasses.label, gridArea 2 1 3 2 ] [ H.text "Table" ]
+        , H.div [ cssClasses.label, gridArea 2 1 3 2 ]
+            [ H.text options.loc.labels.table ]
         , H.button
             [ cssClasses.button
             , HA.disabled options.disabled
             , HE.onClick (options.route SetupClicked)
             , gridArea 1 1 2 2
             ]
-            [ H.text "Setup" ]
+            [ H.text options.loc.buttons.setup ]
         ]
 
 
@@ -337,13 +340,16 @@ viewTopRight options model =
     H.div [ cssClasses.topRight, cssClasses.dark ]
         (List.concat
             [ [ H.div [ cssClasses.box, gridArea 1 1 3 2 ] []
-              , H.div [ cssClasses.label, gridArea 2 1 3 2 ] [ H.text "Table" ]
+              , H.div [ cssClasses.label, gridArea 2 1 3 2 ]
+                    [ H.text options.loc.labels.table ]
               , H.div [ cssClasses.box, gridArea 1 2 3 3 ] []
-              , H.div [ cssClasses.label, gridArea 2 2 3 3 ] [ H.text "Total" ]
+              , H.div [ cssClasses.label, gridArea 2 2 3 3 ]
+                    [ H.text options.loc.labels.total ]
               ]
             , if model.showRanks then
                 [ H.div [ cssClasses.box, gridArea 1 3 3 4 ] []
-                , H.div [ cssClasses.label, gridArea 2 3 3 4 ] [ H.text "Rank" ]
+                , H.div [ cssClasses.label, gridArea 2 3 3 4 ]
+                    [ H.text options.loc.labels.rank ]
                 ]
 
               else
@@ -360,10 +366,10 @@ viewTopRight options model =
                     ]
                     [ H.text
                         (if model.showRanks then
-                            "Hide Ranks"
+                            options.loc.buttons.ranksHide
 
                          else
-                            "Show Ranks"
+                            options.loc.buttons.ranksShow
                         )
                     ]
               ]
@@ -419,7 +425,7 @@ viewTopOverlay options model =
                     , HA.style "place-items" "center"
                     , gridArea 1 (game + 1) 2 (game + 2)
                     ]
-                    [ H.text ("Total: " ++ String.fromInt total) ]
+                    [ H.text (options.loc.status.totalColon total) ]
                 ]
 
             _ ->

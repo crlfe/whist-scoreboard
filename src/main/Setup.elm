@@ -9,6 +9,8 @@ import File.Select
 import Html as H
 import Html.Attributes as HA
 import Html.Events as HE
+import Html.Keyed
+import Intl
 import Scores exposing (Scores)
 import Scores.Csv
 import Task
@@ -16,10 +18,12 @@ import Time
 
 
 type alias Options m =
-    { disabled : Bool
+    { loc : Intl.Localized
+    , disabled : Bool
     , route : Msg -> m
     , onClose : Scores -> m
     , onError : String -> m
+    , onLocale : Intl.Locale -> m
     }
 
 
@@ -33,7 +37,8 @@ type alias Model =
 
 
 type Msg
-    = ClearClicked
+    = LanguageChanged String
+    | ClearClicked
     | ClearingGotTime ( Time.Zone, Time.Posix )
     | LoadClicked
     | LoadingGotFile File.File
@@ -70,15 +75,16 @@ view options model =
 dialogOptions : Options m -> Model -> Dialog.Options m
 dialogOptions options model =
     let
-        defaults =
-            Dialog.defaults
+        localized =
+            Dialog.defaults options.loc
 
         inputHasError =
-            lengthError model.tables /= "" || lengthError model.games /= ""
+            (lengthError options model.tables /= "")
+                || (lengthError options model.games /= "")
     in
-    { defaults
+    { localized
         | disabled = options.disabled
-        , title = "Setup"
+        , title = options.loc.labels.setup
         , onClose = Just (options.route CancelClicked)
         , onEnter = Just (options.route OkClicked)
         , footer =
@@ -86,37 +92,78 @@ dialogOptions options model =
                 [ HA.disabled options.disabled
                 , HE.onClick (options.route CancelClicked)
                 ]
-                [ H.text "Cancel" ]
+                [ H.text options.loc.buttons.cancel ]
             , H.button
                 [ HA.disabled (options.disabled || inputHasError)
                 , HE.onClick (options.route OkClicked)
                 ]
-                [ H.text "Ok" ]
+                [ H.text options.loc.buttons.ok ]
             ]
     }
 
 
 viewMain : Options m -> Model -> List (H.Html m)
 viewMain options model =
-    [ H.div [ cssClasses.menu ]
+    [ H.div
+        [ cssClasses.fields
+        , HA.style "margin-top" "-0.5rem"
+        , HA.style "grid-template-columns" "auto 1fr"
+        ]
+        [ H.label [ HA.for "sLanguage" ]
+            [ H.text options.loc.labels.language ]
+        , Html.Keyed.node "select"
+            [ HA.id "sLanguage"
+            , HA.disabled options.disabled
+            , HE.onInput (LanguageChanged >> options.route)
+            ]
+            (Intl.localeDisplayNames
+                |> List.sortWith
+                    (\( x, _ ) ( y, _ ) ->
+                        if x == options.loc.name then
+                            if y == options.loc.name then
+                                EQ
+
+                            else
+                                LT
+
+                        else if y == options.loc.name then
+                            GT
+
+                        else
+                            compare x y
+                    )
+                |> List.map
+                    (\( code, name ) ->
+                        ( code
+                        , H.option
+                            [ HA.selected (code == options.loc.name)
+                            , HA.value code
+                            ]
+                            [ H.text name ]
+                        )
+                    )
+            )
+        ]
+    , H.div [ cssClasses.menu ]
         [ H.button
             [ HA.disabled options.disabled
             , HE.onClick (options.route ClearClicked)
             ]
-            [ H.text "Clear" ]
+            [ H.text options.loc.buttons.new ]
         , H.button
             [ HA.disabled options.disabled
             , HE.onClick (options.route LoadClicked)
             ]
-            [ H.text "Load" ]
+            [ H.text options.loc.buttons.open ]
         , H.button
             [ HA.disabled options.disabled
             , HE.onClick (options.route SaveClicked)
             ]
-            [ H.text "Save" ]
+            [ H.text options.loc.buttons.save ]
         ]
     , H.div [ cssClasses.fields ]
-        [ H.label [ HA.for "sTitle" ] [ H.text "Title" ]
+        [ H.label [ HA.for "sTitle" ]
+            [ H.text options.loc.labels.title ]
         , H.input
             [ HA.id "sTitle"
             , HA.value model.title
@@ -124,7 +171,8 @@ viewMain options model =
             , HE.onInput (options.route << TitleChanged)
             ]
             []
-        , H.label [ HA.for "sTables" ] [ H.text "Tables" ]
+        , H.label [ HA.for "sTables" ]
+            [ H.text options.loc.labels.tables ]
         , H.input
             [ HA.id "sTables"
             , HA.type_ "number"
@@ -135,8 +183,9 @@ viewMain options model =
             , HE.onInput (options.route << TablesChanged)
             ]
             []
-        , H.label [ cssClasses.error ] [ H.text (lengthError model.tables) ]
-        , H.label [ HA.for "sGames" ] [ H.text "Games" ]
+        , H.label [ cssClasses.error ] [ H.text (lengthError options model.tables) ]
+        , H.label [ HA.for "sGames" ]
+            [ H.text options.loc.labels.games ]
         , H.input
             [ HA.id "sGames"
             , HA.type_ "number"
@@ -147,15 +196,23 @@ viewMain options model =
             , HE.onInput (options.route << GamesChanged)
             ]
             []
-        , H.label [ cssClasses.error ] [ H.text (lengthError model.games) ]
+        , H.label [ cssClasses.error ] [ H.text (lengthError options model.games) ]
         ]
-    , valuesStatus model
+    , valuesStatus options model
     ]
 
 
 update : Msg -> Options m -> Model -> ( Model, Cmd m )
 update msg options model =
     case msg of
+        LanguageChanged name ->
+            case Intl.localeFromName name of
+                Just locale ->
+                    ( model, sendMessage (options.onLocale locale) )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
         ClearClicked ->
             ( model
             , Task.perform
@@ -165,7 +222,7 @@ update msg options model =
 
         ClearingGotTime ( here, now ) ->
             ( { model
-                | title = Scores.datedTitle here now
+                | title = options.loc.status.whistEventDated here now
                 , values = Array.empty
               }
             , Cmd.none
@@ -228,8 +285,8 @@ update msg options model =
             ( model, sendMessage (options.onClose (toScores model)) )
 
 
-valuesStatus : Model -> H.Html msg
-valuesStatus model =
+valuesStatus : Options m -> Model -> H.Html msg
+valuesStatus options model =
     let
         tables =
             String.toInt model.tables |> Maybe.withDefault model.oldScores.tables
@@ -240,40 +297,36 @@ valuesStatus model =
     if model.oldScores.values == model.values then
         if model.oldScores.tables <= tables && model.oldScores.games <= games then
             H.div [ cssClasses.status ]
-                [ H.text "No scores will be changed"
-                ]
+                [ H.text options.loc.status.valuesUnchanged ]
 
         else
             H.div [ cssClasses.status, cssClasses.error ]
-                [ H.text (String.concat [ "Will discard scores outside the board" ])
-                ]
+                [ H.text options.loc.status.valuesCropped ]
 
     else if Array.isEmpty model.values then
         H.div [ cssClasses.status, cssClasses.error ]
-            [ H.text "Will zero all previous scores"
-            ]
+            [ H.text options.loc.status.valuesCleared ]
 
     else
         H.div [ cssClasses.status, cssClasses.error ]
-            [ H.text "Will replace all previous scores"
-            ]
+            [ H.text options.loc.status.valuesReplaced ]
 
 
-lengthError : String -> String
-lengthError value =
+lengthError : Options m -> String -> String
+lengthError options value =
     case String.toInt value of
         Just n ->
             if n < 1 then
-                "too small"
+                options.loc.status.lengthTooSmall
 
             else if n > 100 then
-                "too large"
+                options.loc.status.lengthTooLarge
 
             else
                 ""
 
         Nothing ->
-            "invalid"
+            options.loc.status.lengthInvalid
 
 
 toScores : Model -> Scores
