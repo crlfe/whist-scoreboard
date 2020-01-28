@@ -72,7 +72,6 @@ cssClasses =
         , light = HA.class "sLight"
         , winner = HA.class "sWinner"
         , button = HA.class "sButton"
-        , center = HA.class "sCenter"
         }
     }
 

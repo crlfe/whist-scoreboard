@@ -257,7 +257,7 @@ viewLeft : Int -> H.Html m
 viewLeft tables =
     H.div [ cssClasses.left ]
         [ H.div [ cssClasses.tables ]
-            (List.map (\i -> viewLabel "table" i (i + 1)) (List.range 0 (tables - 1)))
+            (List.map (\i -> viewWide "table" i (i + 1)) (List.range 0 (tables - 1)))
         ]
 
 
@@ -267,15 +267,15 @@ viewRight totals ranks =
         (List.concat
             [ [ H.div
                     [ cssClasses.tables ]
-                    (Array.indexedMap (\i _ -> viewLabel "table" i (i + 1)) totals |> Array.toList)
+                    (Array.indexedMap (\i _ -> viewWide "table" i (i + 1)) totals |> Array.toList)
               , H.div
                     [ cssClasses.totals ]
-                    (Array.indexedMap (viewLabel "total") totals |> Array.toList)
+                    (Array.indexedMap (viewWide "total") totals |> Array.toList)
               ]
             , case ranks of
                 Just rs ->
                     [ H.div [ cssClasses.ranks ]
-                        (Array.indexedMap (viewRankLabel "rank") rs |> Array.toList)
+                        (Array.indexedMap (viewRank "rank") rs |> Array.toList)
                     ]
 
                 _ ->
@@ -304,7 +304,7 @@ viewTopMarks games model =
 viewTop : Int -> Model -> H.Html m
 viewTop games model =
     H.div [ cssClasses.top ]
-        [ H.div [ cssClasses.label ]
+        [ H.div [ cssClasses.box, cssClasses.label ]
             [ H.span
                 [ HA.style "position" "sticky"
                 , HA.style "left" "4.5em"
@@ -313,15 +313,15 @@ viewTop games model =
                 [ H.text "Games" ]
             ]
         , H.div [ cssClasses.games ]
-            (List.map (\i -> viewLabel "game" i (i + 1)) (List.range 0 (games - 1)))
+            (List.map (\i -> viewWide "game" i (i + 1)) (List.range 0 (games - 1)))
         ]
 
 
 viewTopLeft : Options m -> Model -> H.Html m
 viewTopLeft options model =
     H.div [ cssClasses.topLeft, cssClasses.dark ]
-        [ H.div [ cssClasses.label, gridArea 1 1 3 2 ] []
-        , H.div [ cssClasses.center, gridArea 2 1 3 2 ] [ H.text "Table" ]
+        [ H.div [ cssClasses.box, gridArea 1 1 3 2 ] []
+        , H.div [ cssClasses.label, gridArea 2 1 3 2 ] [ H.text "Table" ]
         , H.button
             [ cssClasses.button
             , HA.disabled options.disabled
@@ -336,14 +336,14 @@ viewTopRight : Options m -> Model -> H.Html m
 viewTopRight options model =
     H.div [ cssClasses.topRight, cssClasses.dark ]
         (List.concat
-            [ [ H.div [ cssClasses.label, gridArea 1 1 3 2 ] []
-              , H.div [ cssClasses.center, gridArea 2 1 3 2 ] [ H.text "Table" ]
-              , H.div [ cssClasses.label, gridArea 1 2 3 3 ] []
-              , H.div [ cssClasses.center, gridArea 2 2 3 3 ] [ H.text "Total" ]
+            [ [ H.div [ cssClasses.box, gridArea 1 1 3 2 ] []
+              , H.div [ cssClasses.label, gridArea 2 1 3 2 ] [ H.text "Table" ]
+              , H.div [ cssClasses.box, gridArea 1 2 3 3 ] []
+              , H.div [ cssClasses.label, gridArea 2 2 3 3 ] [ H.text "Total" ]
               ]
             , if model.showRanks then
-                [ H.div [ cssClasses.label, gridArea 1 3 3 4 ] []
-                , H.div [ cssClasses.center, gridArea 2 3 3 4 ] [ H.text "Rank" ]
+                [ H.div [ cssClasses.box, gridArea 1 3 3 4 ] []
+                , H.div [ cssClasses.label, gridArea 2 3 3 4 ] [ H.text "Rank" ]
                 ]
 
               else
@@ -371,21 +371,21 @@ viewTopRight options model =
         )
 
 
-viewLabel : String -> Int -> Int -> H.Html m
-viewLabel name index value =
+viewWide : String -> Int -> Int -> H.Html m
+viewWide name index value =
     H.div
-        [ cssClasses.label
+        [ cssClasses.box
         , dataEvent [ name, String.fromInt index ]
         ]
         [ H.text (String.fromInt value) ]
 
 
-viewRankLabel : String -> Int -> Int -> H.Html m
-viewRankLabel name index value =
+viewRank : String -> Int -> Int -> H.Html m
+viewRank name index value =
     let
         attrs =
             List.concat
-                [ [ cssClasses.label
+                [ [ cssClasses.box
                   , dataEvent [ name, String.fromInt index ]
                   ]
                 , xif (value < 3) [ cssClasses.winner ] []
