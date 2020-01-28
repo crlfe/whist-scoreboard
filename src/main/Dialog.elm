@@ -4,10 +4,12 @@ import Common exposing (KeyboardEvent, xif)
 import Html as H
 import Html.Attributes as HA
 import Html.Events as HE
+import Intl
 
 
 type alias Options m =
-    { disabled : Bool
+    { loc : Intl.Localized
+    , disabled : Bool
     , title : String
     , titleColor : String
     , headerColor : String
@@ -21,10 +23,11 @@ cssClasses =
     Common.cssClasses.dialog
 
 
-defaults : Options m
-defaults =
-    { disabled = False
-    , title = "Message"
+defaults : Intl.Localized -> Options m
+defaults loc =
+    { loc = loc
+    , disabled = False
+    , title = loc.labels.message
     , titleColor = "#000"
     , headerColor = "#AAF"
     , onClose = Nothing
@@ -33,15 +36,24 @@ defaults =
     }
 
 
-error : m -> Options m
-error onClose =
-    { defaults
+error :
+    { loc : Intl.Localized
+    , onClose : m
+    }
+    -> Options m
+error options =
+    let
+        localized =
+            defaults options.loc
+    in
+    { localized
         | title = "Error"
         , headerColor = "#F88"
-        , onClose = Just onClose
-        , onEnter = Just onClose
+        , onClose = Just options.onClose
+        , onEnter = Just options.onClose
         , footer =
-            [ H.button [ HE.onClick onClose ] [ H.text "OK" ]
+            [ H.button [ HE.onClick options.onClose ]
+                [ H.text options.loc.buttons.ok ]
             ]
     }
 
@@ -61,15 +73,18 @@ view options body =
 
 viewHeader : Options m -> List (H.Html m)
 viewHeader options =
+    let
+        titleDiv =
+            H.div
+                [ cssClasses.title
+                , HA.style "color" options.titleColor
+                , HA.style "opacity" (xif options.disabled "25%" "100%")
+                ]
+                [ H.text options.title ]
+    in
     [ H.header
-        [ HA.style "background-color" options.headerColor
-        ]
-        (H.div
-            [ cssClasses.title
-            , HA.style "color" options.titleColor
-            , HA.style "opacity" (xif options.disabled "25%" "100%")
-            ]
-            [ H.text options.title ]
+        [ HA.style "background-color" options.headerColor ]
+        (titleDiv
             :: (case options.onClose of
                     Just onClose ->
                         [ viewHeaderClose options onClose ]
@@ -85,8 +100,9 @@ viewHeaderClose : Options m -> m -> H.Html m
 viewHeaderClose options onClose =
     H.button [ HA.disabled options.disabled, HE.onClick onClose ]
         [ H.img
-            [ HA.src "close.svg"
-            , HA.alt "Close"
+            [ HA.style "grid-area" "1 / -1"
+            , HA.src "close.svg"
+            , HA.alt options.loc.buttons.close
             , HA.style "opacity" (xif options.disabled "25%" "100%")
             ]
             []

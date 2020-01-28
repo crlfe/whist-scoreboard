@@ -4,7 +4,6 @@ module Common exposing
     , arrayMapOne
     , cssClasses
     , decodeKeyboardEvent
-    , monthToInt
     , sendMessage
     , xif
     )
@@ -14,7 +13,6 @@ import Html.Attributes as HA
 import Json.Decode as JD
 import Maybe.Extra
 import Task
-import Time
 
 
 type alias KeyboardEvent =
@@ -93,46 +91,6 @@ decodeKeyboardEvent =
         (JD.field "ctrlKey" JD.bool)
         (JD.field "metaKey" JD.bool)
         (JD.field "shiftKey" JD.bool)
-
-
-monthToInt : Time.Month -> Int
-monthToInt month =
-    case month of
-        Time.Jan ->
-            1
-
-        Time.Feb ->
-            2
-
-        Time.Mar ->
-            3
-
-        Time.Apr ->
-            4
-
-        Time.May ->
-            5
-
-        Time.Jun ->
-            6
-
-        Time.Jul ->
-            7
-
-        Time.Aug ->
-            8
-
-        Time.Sep ->
-            9
-
-        Time.Oct ->
-            10
-
-        Time.Nov ->
-            11
-
-        Time.Dec ->
-            12
 
 
 sendMessage : m -> Cmd m

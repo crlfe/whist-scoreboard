@@ -8,6 +8,7 @@ import Common exposing (KeyboardEvent, arrayGet2, decodeKeyboardEvent)
 import Dialog
 import Html as H
 import Html.Attributes as HA
+import Intl
 import Json.Decode as JD
 import Json.Encode as JE
 import Maybe.Extra
@@ -22,14 +23,17 @@ port storage : JD.Value -> Cmd msg
 
 
 type alias Flags =
-    { width : Float
+    { languages : List String
+    , width : Float
     , height : Float
     , storage : JD.Value
     }
 
 
 type alias Model =
-    { scores : Scores
+    { locale : Intl.Locale
+    , loc : Intl.Localized
+    , scores : Scores
     , sheet : Sheet.Model
     , setup : Maybe Setup.Model
     , error : Maybe String
@@ -46,6 +50,7 @@ type Msg
     | SheetSetup
     | SetupClosed Scores
     | ShowError String
+    | LocaleChanged Intl.Locale
     | WindowResized Int Int
 
 
@@ -62,13 +67,35 @@ main =
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
-        scores =
+        imported =
             importStorage flags.storage
 
+        locale =
+            Maybe.map Intl.localeFromName imported.language
+                |> Maybe.withDefault (Intl.localeFromLanguages flags.languages)
+                |> Maybe.withDefault Intl.English
+
+        loc =
+            Intl.localize locale
+
+        scores =
+            imported.scores
+                |> Maybe.withDefault (Scores.zero "" 22 18)
+                |> (\s ->
+                        { s
+                            | title =
+                                if s.title /= "" then
+                                    s.title
+
+                                else
+                                    loc.status.whistEvent
+                        }
+                   )
+
         model =
-            { scores =
-                scores
-                    |> Maybe.withDefault (Scores.zero "Whist Event" 22 18)
+            { locale = locale
+            , loc = loc
+            , scores = scores
             , sheet = Sheet.init
             , setup = Nothing
             , error = Nothing
@@ -76,7 +103,7 @@ init flags =
                 |> updateSheetSize flags.width flags.height
     in
     ( model
-    , if scores == Nothing then
+    , if imported.scores == Nothing then
         Task.perform StartingGotTime (Task.map2 Tuple.pair Time.here Time.now)
 
       else
@@ -84,7 +111,13 @@ init flags =
     )
 
 
-importStorage : JD.Value -> Maybe Scores
+type alias Imported =
+    { language : Maybe String
+    , scores : Maybe Scores
+    }
+
+
+importStorage : JD.Value -> Imported
 importStorage value =
     let
         version =
@@ -92,13 +125,13 @@ importStorage value =
     in
     case version of
         Ok 1 ->
-            importStorage1 value
+            Imported Nothing (importStorage1 value)
 
         Ok 2 ->
             importStorage2 value
 
         _ ->
-            Nothing
+            Imported Nothing Nothing
 
 
 importStorage1 : JD.Value -> Maybe Scores
@@ -123,7 +156,7 @@ importStorage1 value =
                 )
                 value
     in
-    Result.map2 (Scores.zero "Whist Event") tables games
+    Result.map2 (Scores.zero "") tables games
         |> Result.map2
             (\vs s ->
                 Scores.indexedMap
@@ -134,9 +167,12 @@ importStorage1 value =
         |> Result.toMaybe
 
 
-importStorage2 : JD.Value -> Maybe Scores
+importStorage2 : JD.Value -> { language : Maybe String, scores : Maybe Scores }
 importStorage2 value =
     let
+        language =
+            JD.decodeValue (JD.field "language" JD.string) value
+
         title =
             JD.decodeValue (JD.field "title" JD.string) value
 
@@ -149,8 +185,11 @@ importStorage2 value =
         values =
             JD.decodeValue (JD.field "values" (JD.array (JD.array JD.int))) value
     in
-    Result.map4 Scores title tables games values
-        |> Result.toMaybe
+    { language = language |> Result.toMaybe
+    , scores =
+        Result.map4 Scores title tables games values
+            |> Result.toMaybe
+    }
 
 
 view : Model -> Browser.Document Msg
@@ -161,7 +200,7 @@ view model =
             [ Just (Sheet.view (sheetOptions model) model.sheet)
             , maybeViewBarrier model
             , Maybe.map (Setup.view (setupOptions model)) model.setup
-            , Maybe.map viewError model.error
+            , Maybe.map (viewError model) model.error
             ]
     }
 
@@ -175,9 +214,9 @@ maybeViewBarrier model =
         Nothing
 
 
-viewError : String -> H.Html Msg
-viewError text =
-    Dialog.view errorOptions [ H.text text ]
+viewError : Model -> String -> H.Html Msg
+viewError model error =
+    Dialog.view (errorOptions model) [ H.text error ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -188,12 +227,15 @@ update msg model =
 
         StartingGotTime ( here, now ) ->
             let
-                scores =
+                oldScores =
                     model.scores
+
+                newScores =
+                    { oldScores
+                        | title = model.loc.status.whistEventDated here now
+                    }
             in
-            ( { model | scores = { scores | title = Scores.datedTitle here now } }
-            , Cmd.none
-            )
+            ( { model | scores = newScores }, Cmd.none )
 
         SheetMsg m ->
             Sheet.update m (sheetOptions model) model.sheet
@@ -217,7 +259,7 @@ update msg model =
                     Scores.mapOne (\v -> modBy 5 (v + 1)) table game model.scores
             in
             ( { model | scores = scores }
-            , sendScoresToStorage scores
+            , sendToStorage model.locale scores
             )
 
         SheetSetup ->
@@ -227,11 +269,19 @@ update msg model =
 
         SetupClosed scores ->
             ( { model | scores = scores, setup = Nothing }
-            , sendScoresToStorage scores
+            , sendToStorage model.locale scores
             )
 
         ShowError error ->
             ( { model | error = Just error }, Cmd.none )
+
+        LocaleChanged locale ->
+            ( { model
+                | locale = locale
+                , loc = Intl.localize locale
+              }
+            , sendToStorage locale model.scores
+            )
 
         WindowResized width height ->
             ( updateSheetSize (toFloat width) (toFloat height) model, Cmd.none )
@@ -246,11 +296,12 @@ updateSheetSize width height model =
     { model | sheet = { sheet | maxWidth = width, maxHeight = height } }
 
 
-sendScoresToStorage : Scores -> Cmd Msg
-sendScoresToStorage scores =
+sendToStorage : Intl.Locale -> Scores -> Cmd Msg
+sendToStorage locale scores =
     storage
         (JE.object
             [ ( "version", JE.int 2 )
+            , ( "language", JE.string (Intl.localeName locale) )
             , ( "title", JE.string scores.title )
             , ( "tables", JE.int scores.tables )
             , ( "games", JE.int scores.games )
@@ -283,7 +334,7 @@ handleKeyDown : Model -> KeyboardEvent -> Maybe Msg
 handleKeyDown model event =
     case model.error of
         Just _ ->
-            Dialog.handleKeyDown event errorOptions
+            Dialog.handleKeyDown event (errorOptions model)
 
         Nothing ->
             case model.setup of
@@ -296,7 +347,8 @@ handleKeyDown model event =
 
 sheetOptions : Model -> Sheet.Options Msg
 sheetOptions model =
-    { disabled = Maybe.Extra.isJust model.error || Maybe.Extra.isJust model.setup
+    { loc = model.loc
+    , disabled = Maybe.Extra.isJust model.error || Maybe.Extra.isJust model.setup
     , scores = model.scores
     , route = SheetMsg
     , onIncrement = SheetIncremented
@@ -306,13 +358,18 @@ sheetOptions model =
 
 setupOptions : Model -> Setup.Options Msg
 setupOptions model =
-    { disabled = Maybe.Extra.isJust model.error
+    { loc = model.loc
+    , disabled = Maybe.Extra.isJust model.error
     , route = SetupMsg
     , onClose = SetupClosed
     , onError = ShowError
+    , onLocale = LocaleChanged
     }
 
 
-errorOptions : Dialog.Options Msg
-errorOptions =
-    Dialog.error ErrorClosed
+errorOptions : Model -> Dialog.Options Msg
+errorOptions model =
+    Dialog.error
+        { loc = model.loc
+        , onClose = ErrorClosed
+        }

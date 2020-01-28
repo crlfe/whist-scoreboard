@@ -1,9 +1,7 @@
-module Scores exposing (Scores, datedTitle, explain, fromLists, get, indexedMap, map, mapOne, ranks, set, totals, zero)
+module Scores exposing (Scores, explain, fromLists, get, indexedMap, map, mapOne, ranks, set, totals, zero)
 
 import Array exposing (Array)
-import Common exposing (arrayMapOne, monthToInt)
-import Time
-
+import Common exposing (arrayMapOne)
 
 type alias Scores =
     { title : String
@@ -11,29 +9,6 @@ type alias Scores =
     , games : Int
     , values : Array (Array Int)
     }
-
-
-datedTitle : Time.Zone -> Time.Posix -> String
-datedTitle zone time =
-    let
-        year =
-            Time.toYear zone time |> String.fromInt
-
-        month =
-            Time.toMonth zone time |> monthToInt |> String.fromInt
-
-        day =
-            Time.toDay zone time |> String.fromInt
-    in
-    String.concat
-        [ "Whist Event "
-        , year
-        , "-"
-        , String.padLeft 2 '0' month
-        , "-"
-        , String.padLeft 2 '0' day
-        ]
-
 
 fromLists : String -> List (List Int) -> Scores
 fromLists title xs =
