@@ -1,7 +1,7 @@
 {
   "name": "whist-scoreboard",
   "description": "Scoreboard for a variant of Flag Whist",
-  "version": "0.3.0-beta",
+  "version": "0.3.0-alpha",
   "author": {
     "name": "Chris Wolfe",
     "url": "https://crlfe.ca/"
@@ -20,6 +20,9 @@
     "plugins": [
       "@babel/plugin-transform-modules-commonjs"
     ]
+  },
+  "dependencies": {
+    "electron-updater": "^4.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.8.4",

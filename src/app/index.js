@@ -1,4 +1,5 @@
 import { app, BrowserWindow, Menu } from "electron";
+import { autoUpdater } from "electron-updater";
 
 // Hide deprecation warning; https://github.com/electron/electron/issues/18397
 app.allowRendererProcessReuse = true;
@@ -11,7 +12,15 @@ function createMainWindow() {
   w.loadFile("web/index.html");
 }
 
-app.on("ready", createMainWindow);
+app.on("ready", () => {
+  try {
+    autoUpdater.checkForUpdatesAndNotify().catch(console.error);
+  } catch (err) {
+    console.error(err);
+  }
+
+  createMainWindow();
+});
 
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
