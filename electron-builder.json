@@ -1,0 +1,18 @@
+{
+  "appId": "ca.crlfe.whist-scoreboard",
+  "productName": "Whist Scoreboard",
+  "files": [
+    "package.json",
+    { "from": "./dist/electron-main", "to": "." },
+    { "from": "./dist/electron-renderer", "to": "web" }
+  ],
+  "linux": {
+    "artifactName": "Whist Scoreboard ${version}.${ext}",
+    "target": ["AppImage"],
+    "category": "Game"
+  },
+  "win": {
+    "artifactName": "Whist Scoreboard Setup.${ext}",
+    "target": ["nsis"]
+  }
+}

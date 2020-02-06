@@ -2,13 +2,14 @@ import { CleanWebpackPlugin } from "clean-webpack-plugin";
 import CopyWebpackPlugin from "copy-webpack-plugin";
 import path from "path";
 
-export default (env, argv) => ({
+const webConfig = (target, mode) => ({
   context: path.resolve(__dirname),
   entry: {
-    index: "./src/web/index.js"
+    index: "./src/web"
   },
+  target,
   output: {
-    path: path.resolve(__dirname, "dist", "web")
+    path: path.resolve(__dirname, "dist", target)
   },
   module: {
     rules: [
@@ -19,7 +20,7 @@ export default (env, argv) => ({
           {
             loader: "elm-webpack-loader",
             options: {
-              optimize: argv.mode === "production"
+              optimize: mode === "production"
             }
           }
         ]
@@ -31,3 +32,19 @@ export default (env, argv) => ({
     new CopyWebpackPlugin([{ from: "static" }])
   ]
 });
+
+export default (env, argv) => [
+  {
+    context: path.resolve(__dirname),
+    entry: {
+      index: "./src/app"
+    },
+    target: "electron-main",
+    output: {
+      path: path.resolve(__dirname, "dist", "electron-main")
+    },
+    plugins: [new CleanWebpackPlugin()]
+  },
+  webConfig("electron-renderer", argv.mode),
+  webConfig("web", argv.mode)
+];
