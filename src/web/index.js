@@ -1,3 +1,5 @@
+import { Elm } from "../main/Main.elm";
+
 var localStorage = window.localStorage;
 var localName = "whist-scoreboard";
 var app = Elm.Main.init({
