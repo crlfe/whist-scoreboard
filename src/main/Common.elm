@@ -40,6 +40,8 @@ cssClasses =
         { action = HA.class "action"
         , close = HA.class "close"
         , dialog = HA.class "dialog"
+        , dialogOuter = HA.class "dialogOuter"
+        , dialogInner = HA.class "dialogInner"
         , title = HA.class "title"
         }
     , setup =

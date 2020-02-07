@@ -48,10 +48,15 @@ error onClose =
 
 view : Options m -> List (H.Html m) -> H.Html m
 view options body =
-    H.div [ cssClasses.dialog ] <|
-        viewHeader options
-            ++ body
-            ++ viewFooter options
+    H.div [ cssClasses.dialogOuter ]
+        [ H.div [ cssClasses.dialogInner ]
+            [ H.div [ cssClasses.dialog ]
+                (viewHeader options
+                    ++ body
+                    ++ viewFooter options
+                )
+            ]
+        ]
 
 
 viewHeader : Options m -> List (H.Html m)
