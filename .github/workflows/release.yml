@@ -1,0 +1,29 @@
+name: release
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build_win:
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "10.x"
+      - run: yarn install
+      - run: yarn build
+      - run: yarn package --publish=always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          mkdir dist/win
+          cp dist/latest.yml dist/win
+          cp dist/*.exe dist/win
+          cp dist/*.exe.blockmap dist/win
+      - uses: actions/upload-artifact@v1
+        with:
+          name: "Windows"
+          path: "dist/win"
