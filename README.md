@@ -25,7 +25,12 @@ large TV for every player to see the running totals.
 
 For the moment, please use the pre-compiled version at https://crlfe.github.io/whist-scoreboard/
 
-The `start.sh` and `build.sh` shell scripts contain my non-portable and unsafe incantations for the development and production builds. Issue #3 is my TODO to find or build a less delicate approach that keeps support for static files.
+```
+# Brief instructions:
+yarn install
+yarn build    # build webapp in dist/web
+yarn package  # build Windows executable
+```
 
 ## License and Warranty Disclaimer
 
