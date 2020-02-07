@@ -7,12 +7,13 @@
     { "from": "./dist/electron-renderer", "to": "web" }
   ],
   "linux": {
-    "artifactName": "Whist Scoreboard ${version}.${ext}",
     "target": ["AppImage"],
     "category": "Game"
   },
   "win": {
-    "artifactName": "Whist Scoreboard Setup.${ext}",
     "target": ["nsis"]
+  },
+  "nsis": {
+    "artifactName": "Whist Scoreboard Setup.${ext}"
   }
 }
