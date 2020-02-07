@@ -1,5 +1,6 @@
 import { CleanWebpackPlugin } from "clean-webpack-plugin";
 import CopyWebpackPlugin from "copy-webpack-plugin";
+import { LicenseWebpackPlugin } from "license-webpack-plugin";
 import path from "path";
 
 const webConfig = (target, mode) => ({
@@ -43,7 +44,12 @@ export default (env, argv) => [
     output: {
       path: path.resolve(__dirname, "dist", "electron-main")
     },
-    plugins: [new CleanWebpackPlugin()]
+    plugins: [
+      new CleanWebpackPlugin(),
+      new LicenseWebpackPlugin({
+        outputFilename: "ThirdPartyLicenses.txt"
+      })
+    ]
   },
   webConfig("electron-renderer", argv.mode),
   webConfig("web", argv.mode)
