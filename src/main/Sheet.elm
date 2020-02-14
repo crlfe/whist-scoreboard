@@ -30,6 +30,7 @@ type alias Model =
     , markTables : List Int
     , markTies : List ( Int, Int )
     , showRanks : Bool
+    , zoom : Float
     }
 
 
@@ -43,6 +44,8 @@ type Msg
     | Focused
     | Blurred
     | Escaped
+    | ZoomIn
+    | ZoomOut
 
 
 cssClasses =
@@ -58,6 +61,7 @@ init =
     , markTables = []
     , markTies = []
     , showRanks = False
+    , zoom = 0
     }
 
 
@@ -74,10 +78,12 @@ view options model =
             (2.0 + toFloat options.scores.tables + 1.5) * 1.5
 
         scale =
-            min
+            (min
                 (model.maxWidth / minWidthInEm)
                 (model.maxHeight / heightInEm)
                 |> max 12
+            )
+                * (2 ^ (model.zoom / 4))
 
         ranks =
             if model.showRanks then
@@ -465,6 +471,12 @@ update msg options model =
             , Task.attempt (\_ -> options.route Blurred) (Browser.Dom.blur "sheet")
             )
 
+        ZoomIn ->
+            ( { model | zoom = model.zoom + 1 }, Cmd.none )
+
+        ZoomOut ->
+            ( { model | zoom = model.zoom - 1 }, Cmd.none )
+
 
 updateShowHideRanksClicked : Model -> Model
 updateShowHideRanksClicked model =
@@ -532,6 +544,15 @@ updateValuePressed table game options model =
 handleKeyDown : KeyboardEvent -> Options m -> Model -> Maybe m
 handleKeyDown event options model =
     case event.key of
+        "-" ->
+            Just (options.route ZoomOut)
+
+        "=" ->
+            Just (options.route ZoomIn)
+
+        "+" ->
+            Just (options.route ZoomIn)
+
         "Escape" ->
             Just (options.route Escaped)
 
