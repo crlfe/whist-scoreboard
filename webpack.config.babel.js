@@ -2,6 +2,7 @@ import { CleanWebpackPlugin } from "clean-webpack-plugin";
 import CopyWebpackPlugin from "copy-webpack-plugin";
 import { LicenseWebpackPlugin } from "license-webpack-plugin";
 import path from "path";
+import webpack from "webpack";
 
 const webConfig = (target, mode) => ({
   context: path.resolve(__dirname),
@@ -30,7 +31,10 @@ const webConfig = (target, mode) => ({
   },
   plugins: [
     new CleanWebpackPlugin(),
-    new CopyWebpackPlugin([{ from: "static" }])
+    new CopyWebpackPlugin([{ from: "static" }]),
+    new webpack.DefinePlugin({
+      "process.env.NODE_ENV": JSON.stringify(mode)
+    })
   ]
 });
 

@@ -26,7 +26,11 @@ app.ports.storage.subscribe(function(data) {
 });
 
 try {
+  const hitServer =
+    process.env.NODE_ENV === "production"
+      ? "https://crlfe.ca"
+      : "http://localhost:5000";
   const img = new Image();
-  img.src = `https://crlfe.ca/f/hit?e=whist-scoreboard-${version}`;
+  img.src = `${hitServer}/f/hit?e=whist-scoreboard-${version}`;
   img.addEventListener("load", function() {});
 } catch (err) {}
