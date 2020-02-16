@@ -1,4 +1,4 @@
-module Dialog exposing (Options, defaults, error, handleKeyDown, view)
+module Ui.Dialog exposing (Options, defaults, error, handleKeyDown, view)
 
 import Common exposing (KeyboardEvent, xif)
 import Html as H

@@ -5,7 +5,7 @@ import Browser
 import Browser.Dom
 import Browser.Events
 import Common exposing (KeyboardEvent, arrayGet2, decodeKeyboardEvent)
-import Dialog
+import Ui.Dialog
 import Html as H
 import Html.Attributes as HA
 import Intl
@@ -216,7 +216,7 @@ maybeViewBarrier model =
 
 viewError : Model -> String -> H.Html Msg
 viewError model error =
-    Dialog.view (errorOptions model) [ H.text error ]
+    Ui.Dialog.view (errorOptions model) [ H.text error ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -334,7 +334,7 @@ handleKeyDown : Model -> KeyboardEvent -> Maybe Msg
 handleKeyDown model event =
     case model.error of
         Just _ ->
-            Dialog.handleKeyDown event (errorOptions model)
+            Ui.Dialog.handleKeyDown event (errorOptions model)
 
         Nothing ->
             case model.setup of
@@ -367,9 +367,9 @@ setupOptions model =
     }
 
 
-errorOptions : Model -> Dialog.Options Msg
+errorOptions : Model -> Ui.Dialog.Options Msg
 errorOptions model =
-    Dialog.error
+    Ui.Dialog.error
         { loc = model.loc
         , onClose = ErrorClosed
         }

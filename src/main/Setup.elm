@@ -2,7 +2,7 @@ module Setup exposing (Model, Msg, Options, handleKeyDown, init, update, view)
 
 import Array exposing (Array)
 import Common exposing (KeyboardEvent, sendMessage)
-import Dialog
+import Ui.Dialog
 import File
 import File.Download
 import File.Select
@@ -67,16 +67,16 @@ init scores =
 
 view : Options m -> Model -> H.Html m
 view options model =
-    Dialog.view
+    Ui.Dialog.view
         (dialogOptions options model)
         (viewMain options model)
 
 
-dialogOptions : Options m -> Model -> Dialog.Options m
+dialogOptions : Options m -> Model -> Ui.Dialog.Options m
 dialogOptions options model =
     let
         localized =
-            Dialog.defaults options.loc
+            Ui.Dialog.defaults options.loc
 
         inputHasError =
             (lengthError options model.tables /= "")
@@ -358,4 +358,4 @@ toScores model =
 
 handleKeyDown : KeyboardEvent -> Options m -> Model -> Maybe m
 handleKeyDown event options model =
-    Dialog.handleKeyDown event (dialogOptions options model)
+    Ui.Dialog.handleKeyDown event (dialogOptions options model)
