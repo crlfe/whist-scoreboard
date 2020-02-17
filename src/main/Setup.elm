@@ -1,7 +1,7 @@
 module Setup exposing (Model, Msg, Options, handleKeyDown, init, update, view)
 
 import Array exposing (Array)
-import Common exposing (KeyboardEvent, sendMessage)
+import Common exposing (KeyboardEvent, sendMessage, xif)
 import File
 import File.Download
 import File.Select
@@ -56,6 +56,10 @@ cssClasses =
     Common.cssClasses.setup
 
 
+cssDialog =
+    Common.cssClasses.dialog
+
+
 init : Scores -> ( Model, Cmd Msg )
 init scores =
     ( { oldScores = scores
@@ -76,9 +80,68 @@ init scores =
 
 view : Options m -> Model -> H.Html m
 view options model =
-    Ui.Dialog.view
-        (dialogOptions options model)
-        (viewMain options model)
+    H.div [ cssDialog.dialogOuter ]
+        [ H.div [ cssDialog.dialogInner ]
+            [ H.div [ cssDialog.dialog ]
+                (viewHeader options
+                    ++ viewMain options model
+                    ++ viewFooter options model
+                )
+            ]
+        ]
+
+
+viewHeader : Options m -> List (H.Html m)
+viewHeader options =
+    let
+        titleDiv =
+            H.div
+                [ cssDialog.title
+                , HA.style "opacity" (xif options.disabled "25%" "100%")
+                ]
+                [ H.text options.loc.labels.setup ]
+    in
+    [ H.header
+        [ HA.style "background-color" "#AAF" ]
+        [ titleDiv
+        , viewHeaderClose options (options.route CancelClicked)
+        ]
+    ]
+
+
+viewHeaderClose : Options m -> m -> H.Html m
+viewHeaderClose options onClose =
+    H.button [ HA.disabled options.disabled, HE.onClick onClose ]
+        [ H.img
+            [ HA.style "grid-area" "1 / -1"
+            , HA.src "close.svg"
+            , HA.alt options.loc.buttons.close
+            , HA.style "opacity" (xif options.disabled "25%" "100%")
+            ]
+            []
+        ]
+
+
+viewFooter : Options m -> Model -> List (H.Html m)
+viewFooter options model =
+    let
+        inputHasError =
+            (lengthError options model.tables /= "")
+                || (lengthError options model.games /= "")
+    in
+    [ H.footer []
+        [ H.button
+            [ HA.disabled options.disabled
+            , HE.onClick (options.route CancelClicked)
+            ]
+            [ H.text options.loc.buttons.cancel ]
+        , H.button
+            [ HA.disabled (options.disabled || inputHasError)
+            , HE.onClick (options.route OkClicked)
+            ]
+            [ H.text options.loc.buttons.ok ]
+        ]
+    ]
 
 
 dialogOptions : Options m -> Model -> Ui.Dialog.Options m
@@ -374,4 +437,9 @@ toScores model =
 
 handleKeyDown : KeyboardEvent -> Options m -> Model -> Maybe m
 handleKeyDown event options model =
-    Ui.Dialog.handleKeyDown event (dialogOptions options model)
+    case event.key of
+        "Escape" ->
+            Just (options.route CancelClicked)
+
+        _ ->
+            Nothing
