@@ -2,7 +2,6 @@ module Setup exposing (Model, Msg, Options, handleKeyDown, init, update, view)
 
 import Array exposing (Array)
 import Common exposing (KeyboardEvent, sendMessage)
-import Ui.Dialog
 import File
 import File.Download
 import File.Select
@@ -15,6 +14,7 @@ import Scores exposing (Scores)
 import Scores.Csv
 import Task
 import Time
+import Ui.Dialog
 
 
 type alias Options m =
@@ -37,7 +37,8 @@ type alias Model =
 
 
 type Msg
-    = LanguageChanged String
+    = InitCreateTitle ( Time.Zone, Time.Posix )
+    | LanguageChanged String
     | ClearClicked
     | ClearingGotTime ( Time.Zone, Time.Posix )
     | LoadClicked
@@ -55,14 +56,22 @@ cssClasses =
     Common.cssClasses.setup
 
 
-init : Scores -> Model
+init : Scores -> ( Model, Cmd Msg )
 init scores =
-    { oldScores = scores
-    , title = scores.title
-    , tables = String.fromInt scores.tables
-    , games = String.fromInt scores.games
-    , values = scores.values
-    }
+    ( { oldScores = scores
+      , title = scores.title
+      , tables = String.fromInt scores.tables
+      , games = String.fromInt scores.games
+      , values = scores.values
+      }
+    , if String.isEmpty scores.title then
+        Task.perform
+            InitCreateTitle
+            (Task.map2 Tuple.pair Time.here Time.now)
+
+      else
+        Cmd.none
+    )
 
 
 view : Options m -> Model -> H.Html m
@@ -205,6 +214,13 @@ viewMain options model =
 update : Msg -> Options m -> Model -> ( Model, Cmd m )
 update msg options model =
     case msg of
+        InitCreateTitle ( here, now ) ->
+            ( { model
+                | title = options.loc.status.whistEventDated here now
+              }
+            , Cmd.none
+            )
+
         LanguageChanged name ->
             case Intl.localeFromName name of
                 Just locale ->

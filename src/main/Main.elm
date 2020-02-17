@@ -1,11 +1,9 @@
 port module Main exposing (Model, main)
 
-import Array exposing (Array)
+import Array
 import Browser
-import Browser.Dom
 import Browser.Events
 import Common exposing (KeyboardEvent, arrayGet2, decodeKeyboardEvent)
-import Ui.Dialog
 import Html as H
 import Html.Attributes as HA
 import Intl
@@ -15,8 +13,7 @@ import Maybe.Extra
 import Scores exposing (Scores)
 import Setup
 import Sheet
-import Task
-import Time
+import Ui.Dialog
 
 
 port storage : JD.Value -> Cmd msg
@@ -41,9 +38,7 @@ type alias Model =
 
 
 type Msg
-    = Noop
-    | StartingGotTime ( Time.Zone, Time.Posix )
-    | SheetMsg Sheet.Msg
+    = SheetMsg Sheet.Msg
     | SetupMsg Setup.Msg
     | ErrorClosed
     | SheetIncremented Int Int
@@ -81,16 +76,6 @@ init flags =
         scores =
             imported.scores
                 |> Maybe.withDefault (Scores.zero "" 22 18)
-                |> (\s ->
-                        { s
-                            | title =
-                                if s.title /= "" then
-                                    s.title
-
-                                else
-                                    loc.status.whistEvent
-                        }
-                   )
 
         model =
             { locale = locale
@@ -102,13 +87,17 @@ init flags =
             }
                 |> updateSheetSize flags.width flags.height
     in
-    ( model
-    , if imported.scores == Nothing then
-        Task.perform StartingGotTime (Task.map2 Tuple.pair Time.here Time.now)
+    if String.isEmpty scores.title then
+        let
+            ( setup, cmd ) =
+                Setup.init scores
+        in
+        ( { model | setup = Just setup }
+        , Cmd.map SetupMsg cmd
+        )
 
-      else
-        Cmd.none
-    )
+    else
+        ( model, Cmd.none )
 
 
 type alias Imported =
@@ -222,21 +211,6 @@ viewError model error =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Noop ->
-            ( model, Cmd.none )
-
-        StartingGotTime ( here, now ) ->
-            let
-                oldScores =
-                    model.scores
-
-                newScores =
-                    { oldScores
-                        | title = model.loc.status.whistEventDated here now
-                    }
-            in
-            ( { model | scores = newScores }, Cmd.none )
-
         SheetMsg m ->
             Sheet.update m (sheetOptions model) model.sheet
                 |> Tuple.mapFirst (\s -> { model | sheet = s })
@@ -263,8 +237,12 @@ update msg model =
             )
 
         SheetSetup ->
-            ( { model | setup = Just (Setup.init model.scores) }
-            , Task.attempt (\_ -> Noop) (Browser.Dom.focus "sTitle")
+            let
+                ( setup, cmd ) =
+                    Setup.init model.scores
+            in
+            ( { model | setup = Just setup }
+            , Cmd.map SetupMsg cmd
             )
 
         SetupClosed scores ->
