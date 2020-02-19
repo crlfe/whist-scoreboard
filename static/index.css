@@ -264,12 +264,12 @@ input {
   place-items: stretch;
   grid-gap: 1.5rem;
   transition: opacity 0.2s;
-  opacity: 0%;
+  opacity: 0;
   z-index: 1;
 }
 
 .tTabContent.active {
-  opacity: 100%;
+  opacity: 1;
   z-index: 2;
 }
 
