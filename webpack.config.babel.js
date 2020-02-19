@@ -26,6 +26,10 @@ const webConfig = (target, mode) => ({
             }
           }
         ]
+      },
+      {
+        test: /\.txt$/,
+        use: "raw-loader"
       }
     ]
   },
@@ -42,11 +46,20 @@ export default (env, argv) => [
   {
     context: path.resolve(__dirname),
     entry: {
-      index: "./src/app"
+      index: "./src/app",
+      preload: "./src/app/preload"
     },
     target: "electron-main",
     output: {
       path: path.resolve(__dirname, "dist", "electron-main")
+    },
+    module: {
+      rules: [
+        {
+          test: /\.txt$/,
+          use: "raw-loader"
+        }
+      ]
     },
     plugins: [
       new CleanWebpackPlugin(),

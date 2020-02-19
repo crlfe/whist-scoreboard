@@ -1,5 +1,8 @@
 import { Elm } from "../main/Main.elm";
+
 import { version } from "../../package.json";
+import license from "../../LICENSE.txt";
+import thirdPartyLicenses from "./ThirdPartyLicenses.txt";
 
 var localStorage = window.localStorage;
 var localName = "whist-scoreboard";
@@ -8,6 +11,11 @@ var app = Elm.Main.init({
     languages: navigator.languages || [
       navigator.language || navigator.userLanguage
     ],
+    licenses:
+      license +
+      "\n===\n" +
+      thirdPartyLicenses +
+      (window.electronLicenses ? "\n===\n" + window.electronLicenses : ""),
     width: window.innerWidth,
     height: window.innerHeight,
     storage: (function() {

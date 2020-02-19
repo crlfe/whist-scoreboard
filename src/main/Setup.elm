@@ -24,6 +24,7 @@ type alias Options m =
     , onClose : Scores -> m
     , onError : String -> m
     , onLocale : Intl.Locale -> m
+    , onShowLicenses : m
     }
 
 

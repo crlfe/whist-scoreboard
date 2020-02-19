@@ -6,6 +6,7 @@ import Browser.Events
 import Common exposing (KeyboardEvent, arrayGet2, decodeKeyboardEvent)
 import Html as H
 import Html.Attributes as HA
+import Html.Events as HE
 import Intl
 import Json.Decode as JD
 import Json.Encode as JE
@@ -21,6 +22,7 @@ port storage : JD.Value -> Cmd msg
 
 type alias Flags =
     { languages : List String
+    , licenses : String
     , width : Float
     , height : Float
     , storage : JD.Value
@@ -30,9 +32,11 @@ type alias Flags =
 type alias Model =
     { locale : Intl.Locale
     , loc : Intl.Localized
+    , licenses : String
     , scores : Scores
     , sheet : Sheet.Model
     , setup : Maybe Setup.Model
+    , showLicenses : Bool
     , error : Maybe String
     }
 
@@ -44,6 +48,8 @@ type Msg
     | SheetIncremented Int Int
     | SheetSetup
     | SetupClosed Scores
+    | ShowLicenses
+    | HideLicenses
     | ShowError String
     | LocaleChanged Intl.Locale
     | WindowResized Int Int
@@ -80,9 +86,11 @@ init flags =
         model =
             { locale = locale
             , loc = loc
+            , licenses = flags.licenses
             , scores = scores
             , sheet = Sheet.init
             , setup = Nothing
+            , showLicenses = False
             , error = Nothing
             }
                 |> updateSheetSize flags.width flags.height
@@ -189,6 +197,11 @@ view model =
             [ Just (Sheet.view (sheetOptions model) model.sheet)
             , maybeViewBarrier model
             , Maybe.map (Setup.view (setupOptions model)) model.setup
+            , if model.showLicenses then
+                Just (viewLicenses model)
+
+              else
+                Nothing
             , Maybe.map (viewError model) model.error
             ]
     }
@@ -201,6 +214,31 @@ maybeViewBarrier model =
 
     else
         Nothing
+
+
+viewLicenses : Model -> H.Html Msg
+viewLicenses model =
+    let
+        defaults =
+            Ui.Dialog.defaults model.loc
+
+        options =
+            { defaults
+                | title = "Licenses"
+                , onClose = Just HideLicenses
+                , onEnter = Just HideLicenses
+                , footer =
+                    [ H.button [ HE.onClick HideLicenses ] [ H.text model.loc.buttons.ok ]
+                    ]
+            }
+    in
+    Ui.Dialog.view options
+        [ H.div
+            [ HA.style "width" "45rem"
+            , HA.style "white-space" "pre-line"
+            ]
+            [ H.text model.licenses ]
+        ]
 
 
 viewError : Model -> String -> H.Html Msg
@@ -249,6 +287,12 @@ update msg model =
             ( { model | scores = scores, setup = Nothing }
             , sendToStorage model.locale scores
             )
+
+        ShowLicenses ->
+            ( { model | showLicenses = True }, Cmd.none )
+
+        HideLicenses ->
+            ( { model | showLicenses = False }, Cmd.none )
 
         ShowError error ->
             ( { model | error = Just error }, Cmd.none )
@@ -326,7 +370,10 @@ handleKeyDown model event =
 sheetOptions : Model -> Sheet.Options Msg
 sheetOptions model =
     { loc = model.loc
-    , disabled = Maybe.Extra.isJust model.error || Maybe.Extra.isJust model.setup
+    , disabled =
+        Maybe.Extra.isJust model.setup
+            || model.showLicenses
+            || Maybe.Extra.isJust model.error
     , scores = model.scores
     , route = SheetMsg
     , onIncrement = SheetIncremented
@@ -337,11 +384,14 @@ sheetOptions model =
 setupOptions : Model -> Setup.Options Msg
 setupOptions model =
     { loc = model.loc
-    , disabled = Maybe.Extra.isJust model.error
+    , disabled =
+        model.showLicenses
+            || Maybe.Extra.isJust model.error
     , route = SetupMsg
     , onClose = SetupClosed
     , onError = ShowError
     , onLocale = LocaleChanged
+    , onShowLicenses = ShowLicenses
     }
 
 

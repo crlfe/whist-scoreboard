@@ -1,5 +1,6 @@
 import { app, BrowserWindow, Menu } from "electron";
 import { autoUpdater } from "electron-updater";
+import path from "path";
 
 // Hide deprecation warning; https://github.com/electron/electron/issues/18397
 app.allowRendererProcessReuse = true;
@@ -8,7 +9,12 @@ app.allowRendererProcessReuse = true;
 Menu.setApplicationMenu(null);
 
 function createMainWindow() {
-  const w = new BrowserWindow({});
+  const w = new BrowserWindow({
+    webPreferences: {
+      nodeIntegration: false,
+      preload: path.join(app.getAppPath(), "preload.js")
+    }
+  });
   w.loadFile("web/index.html");
 }
 
