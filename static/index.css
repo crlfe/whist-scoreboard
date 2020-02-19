@@ -16,7 +16,7 @@ body {
 button,
 input {
   margin: 0;
-  padding: 0 0.5rem;
+  padding: 0;
   box-sizing: border-box;
 
   font: inherit;
@@ -24,7 +24,8 @@ input {
   white-space: nowrap;
 }
 
-select, input {
+select,
+input {
   font-size: inherit;
   padding: 0 0.5rem;
   max-width: 100%;
@@ -246,6 +247,32 @@ select, input {
   background-color: #fff;
 }
 
+.tTab {
+  background: none;
+  border: none;
+  outline: none;
+}
+
+.tTabActive {
+  border-bottom: 0.125rem solid #66f;
+  transition: transform ease 0.25s;
+}
+
+.tTabContent {
+  pointer-events: all;
+  display: grid;
+  place-items: stretch;
+  grid-gap: 1.5rem;
+  transition: opacity 0.2s;
+  opacity: 0%;
+  z-index: 1;
+}
+
+.tTabContent.active {
+  opacity: 100%;
+  z-index: 2;
+}
+
 .tMenu {
   grid-column: 1 / -1;
 
@@ -255,7 +282,6 @@ select, input {
 }
 
 .tFields {
-  width: 20rem;
   display: grid;
   grid: auto-flow 2.5rem / 3.5rem minmax(0, 1fr) 5rem;
   grid-gap: 0.5rem;
@@ -270,10 +296,9 @@ select, input {
 }
 
 .tStatus {
-  width: 20rem;
-
   display: grid;
   place-items: center;
+  min-height: 2rem;
 
   text-align: center;
   line-height: 1.5;

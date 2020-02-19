@@ -11,6 +11,7 @@ var app = Elm.Main.init({
     languages: navigator.languages || [
       navigator.language || navigator.userLanguage
     ],
+    version,
     licenses:
       license +
       "\n===\n" +

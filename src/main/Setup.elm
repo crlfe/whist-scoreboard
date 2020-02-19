@@ -14,11 +14,11 @@ import Scores exposing (Scores)
 import Scores.Csv
 import Task
 import Time
-import Ui.Dialog
 
 
 type alias Options m =
     { loc : Intl.Localized
+    , version : String
     , disabled : Bool
     , route : Msg -> m
     , onClose : Scores -> m
@@ -30,6 +30,7 @@ type alias Options m =
 
 type alias Model =
     { oldScores : Scores
+    , tab : CurrentTab
     , title : String
     , tables : String
     , games : String
@@ -37,8 +38,15 @@ type alias Model =
     }
 
 
+type CurrentTab
+    = SetupTab
+    | AboutTab
+
+
 type Msg
     = InitCreateTitle ( Time.Zone, Time.Posix )
+    | SetupTabClicked
+    | AboutTabClicked
     | LanguageChanged String
     | ClearClicked
     | ClearingGotTime ( Time.Zone, Time.Posix )
@@ -64,6 +72,7 @@ cssDialog =
 init : Scores -> ( Model, Cmd Msg )
 init scores =
     ( { oldScores = scores
+      , tab = SetupTab
       , title = scores.title
       , tables = String.fromInt scores.tables
       , games = String.fromInt scores.games
@@ -81,33 +90,72 @@ init scores =
 
 view : Options m -> Model -> H.Html m
 view options model =
-    H.div [ cssDialog.dialogOuter ]
-        [ H.div [ cssDialog.dialogInner ]
-            [ H.div [ cssDialog.dialog ]
-                (viewHeader options
-                    ++ viewMain options model
-                    ++ viewFooter options model
-                )
+    H.div
+        [ cssDialog.dialogOuter
+        ]
+        [ H.div
+            [ cssDialog.dialogInner
+            , HA.style "min-width" "24rem"
+            ]
+            [ H.div
+                [ cssDialog.dialog ]
+                [ viewHeader options model
+                , viewSetup options model
+                , viewAbout options model
+                ]
             ]
         ]
 
 
-viewHeader : Options m -> List (H.Html m)
-viewHeader options =
-    let
-        titleDiv =
-            H.div
-                [ cssDialog.title
-                , HA.style "opacity" (xif options.disabled "25%" "100%")
+viewHeader : Options m -> Model -> H.Html m
+viewHeader options model =
+    H.header [ HA.style "background-color" "#ddf" ]
+        [ H.div
+            [ cssDialog.title
+            , HA.style "padding" "0"
+            , HA.style "opacity" (xif options.disabled "25%" "100%")
+            , HA.style "display" "grid"
+            , HA.style "grid-template-columns" "repeat(2, 8rem)"
+            , HA.style "grid-template-rows" "2rem"
+            , HA.style "place-content" "start"
+            , HA.style "place-items" "stretch"
+            ]
+            [ H.div
+                [ HA.class "tTabActive"
+                , HA.style "grid-area" "1 / 1"
+                , HA.style "transform"
+                    (String.concat
+                        [ "translate("
+                        , case model.tab of
+                            SetupTab ->
+                                "0rem"
+
+                            AboutTab ->
+                                "8rem"
+                        , ")"
+                        ]
+                    )
+                ]
+                []
+            , H.button
+                [ HA.class "tTab"
+                , HA.disabled options.disabled
+                , HA.style "grid-area" "1 / 1"
+                , HE.onClick
+                    (options.route SetupTabClicked)
                 ]
                 [ H.text options.loc.labels.setup ]
-    in
-    [ H.header
-        [ HA.style "background-color" "#AAF" ]
-        [ titleDiv
+            , H.button
+                [ HA.class "tTab"
+                , HA.disabled options.disabled
+                , HA.style "grid-area" "1 / 2"
+                , HE.onClick
+                    (options.route AboutTabClicked)
+                ]
+                [ H.text options.loc.labels.about ]
+            ]
         , viewHeaderClose options (options.route CancelClicked)
         ]
-    ]
 
 
 viewHeaderClose : Options m -> m -> H.Html m
@@ -123,156 +171,201 @@ viewHeaderClose options onClose =
         ]
 
 
-viewFooter : Options m -> Model -> List (H.Html m)
-viewFooter options model =
+viewSetup : Options m -> Model -> H.Html m
+viewSetup options model =
     let
-        inputHasError =
-            (lengthError options model.tables /= "")
-                || (lengthError options model.games /= "")
+        disabled =
+            options.disabled || model.tab /= SetupTab
     in
-    [ H.footer []
-        [ H.button
-            [ HA.disabled options.disabled
-            , HE.onClick (options.route CancelClicked)
-            ]
-            [ H.text options.loc.buttons.cancel ]
-        , H.button
-            [ HA.disabled (options.disabled || inputHasError)
-            , HE.onClick (options.route OkClicked)
-            ]
-            [ H.text options.loc.buttons.ok ]
+    H.div
+        [ HA.class
+            (if model.tab == SetupTab then
+                "tTabContent active"
+
+             else
+                "tTabContent"
+            )
+        , HA.style "grid-area" "2 / 1"
         ]
-    ]
+        [ H.div
+            [ cssClasses.fields
+            , HA.style "margin-top" "-0.5rem"
+            , HA.style "grid-template-columns" "auto 1fr"
+            ]
+            [ H.label [ HA.for "sLanguage" ]
+                [ H.text options.loc.labels.language ]
+            , Html.Keyed.node "select"
+                [ HA.id "sLanguage"
+                , HA.disabled disabled
+                , HE.onInput (LanguageChanged >> options.route)
+                ]
+                (Intl.localeDisplayNames
+                    |> List.sortWith
+                        (\( x, _ ) ( y, _ ) ->
+                            if x == options.loc.name then
+                                if y == options.loc.name then
+                                    EQ
 
+                                else
+                                    LT
 
-dialogOptions : Options m -> Model -> Ui.Dialog.Options m
-dialogOptions options model =
-    let
-        localized =
-            Ui.Dialog.defaults options.loc
+                            else if y == options.loc.name then
+                                GT
 
-        inputHasError =
-            (lengthError options model.tables /= "")
-                || (lengthError options model.games /= "")
-    in
-    { localized
-        | disabled = options.disabled
-        , title = options.loc.labels.setup
-        , onClose = Just (options.route CancelClicked)
-        , onEnter = Just (options.route OkClicked)
-        , footer =
+                            else
+                                compare x y
+                        )
+                    |> List.map
+                        (\( code, name ) ->
+                            ( code
+                            , H.option
+                                [ HA.selected (code == options.loc.name)
+                                , HA.value code
+                                ]
+                                [ H.text name ]
+                            )
+                        )
+                )
+            ]
+        , H.div [ cssClasses.menu ]
             [ H.button
-                [ HA.disabled options.disabled
+                [ HA.disabled disabled
+                , HE.onClick (options.route ClearClicked)
+                ]
+                [ H.text options.loc.buttons.new ]
+            , H.button
+                [ HA.disabled disabled
+                , HE.onClick (options.route LoadClicked)
+                ]
+                [ H.text options.loc.buttons.open ]
+            , H.button
+                [ HA.disabled disabled
+                , HE.onClick (options.route SaveClicked)
+                ]
+                [ H.text options.loc.buttons.save ]
+            ]
+        , H.div [ cssClasses.fields ]
+            [ H.label [ HA.for "sTitle" ]
+                [ H.text options.loc.labels.title ]
+            , H.input
+                [ HA.id "sTitle"
+                , HA.value model.title
+                , HA.disabled disabled
+                , HE.onInput (options.route << TitleChanged)
+                ]
+                []
+            , H.label [ HA.for "sTables" ]
+                [ H.text options.loc.labels.tables ]
+            , H.input
+                [ HA.id "sTables"
+                , HA.type_ "number"
+                , HA.min "1"
+                , HA.max "100"
+                , HA.value model.tables
+                , HA.disabled disabled
+                , HE.onInput (options.route << TablesChanged)
+                ]
+                []
+            , H.label [ cssClasses.error ] [ H.text (lengthError options model.tables) ]
+            , H.label [ HA.for "sGames" ]
+                [ H.text options.loc.labels.games ]
+            , H.input
+                [ HA.id "sGames"
+                , HA.type_ "number"
+                , HA.min "1"
+                , HA.max "100"
+                , HA.value model.games
+                , HA.disabled disabled
+                , HE.onInput (options.route << GamesChanged)
+                ]
+                []
+            , H.label [ cssClasses.error ] [ H.text (lengthError options model.games) ]
+            ]
+        , valuesStatus options model
+        , let
+            inputHasError =
+                (lengthError options model.tables /= "")
+                    || (lengthError options model.games /= "")
+          in
+          H.footer [ HA.class "tMenu" ]
+            [ H.button
+                [ HA.disabled disabled
                 , HE.onClick (options.route CancelClicked)
                 ]
                 [ H.text options.loc.buttons.cancel ]
             , H.button
-                [ HA.disabled (options.disabled || inputHasError)
+                [ HA.disabled (disabled || inputHasError)
                 , HE.onClick (options.route OkClicked)
                 ]
                 [ H.text options.loc.buttons.ok ]
             ]
-    }
-
-
-viewMain : Options m -> Model -> List (H.Html m)
-viewMain options model =
-    [ H.div
-        [ cssClasses.fields
-        , HA.style "margin-top" "-0.5rem"
-        , HA.style "grid-template-columns" "auto 1fr"
         ]
-        [ H.label [ HA.for "sLanguage" ]
-            [ H.text options.loc.labels.language ]
-        , Html.Keyed.node "select"
-            [ HA.id "sLanguage"
-            , HA.disabled options.disabled
-            , HE.onInput (LanguageChanged >> options.route)
-            ]
-            (Intl.localeDisplayNames
-                |> List.sortWith
-                    (\( x, _ ) ( y, _ ) ->
-                        if x == options.loc.name then
-                            if y == options.loc.name then
-                                EQ
 
-                            else
-                                LT
 
-                        else if y == options.loc.name then
-                            GT
+viewAbout : Options m -> Model -> H.Html m
+viewAbout options model =
+    let
+        disabled =
+            options.disabled || model.tab /= AboutTab
+    in
+    H.div
+        [ HA.class
+            (if model.tab == AboutTab then
+                "tTabContent active"
 
-                        else
-                            compare x y
-                    )
-                |> List.map
-                    (\( code, name ) ->
-                        ( code
-                        , H.option
-                            [ HA.selected (code == options.loc.name)
-                            , HA.value code
-                            ]
-                            [ H.text name ]
-                        )
-                    )
+             else
+                "tTabContent"
             )
+        , HA.style "grid-area" "2 / 1"
+        , HA.style "grid-template-rows" "1fr 2.5rem 2.5rem"
         ]
-    , H.div [ cssClasses.menu ]
-        [ H.button
-            [ HA.disabled options.disabled
-            , HE.onClick (options.route ClearClicked)
+        [ H.div
+            [ HA.style "line-height" "1.5"
+            , HA.style "white-space" "pre-line"
             ]
-            [ H.text options.loc.buttons.new ]
-        , H.button
-            [ HA.disabled options.disabled
-            , HE.onClick (options.route LoadClicked)
+            [ H.text ("Whist Scoreboard " ++ options.version ++ "\nby Chris Wolfe (")
+            , webLink [ HA.disabled disabled, HA.href "https://crlfe.ca/" ] [ H.text "https://crlfe.ca/" ]
+            , H.text ")\n\n"
+            , H.text "This software is freely available under a BSD license, and the source is "
+            , webLink [ HA.disabled disabled, HA.href "https://github.com/crlfe/whist-scoreboard/" ] [ H.text "shared on GitHub" ]
+            , H.text ". If you enjoy this software, please consider following me on "
+            , webLink [ HA.disabled disabled, HA.href "https://twitter.com/crlfe/" ] [ H.text "Twitter" ]
+            , H.text " and supporting my work through "
+            , webLink [ HA.disabled disabled, HA.href "https://patreon.com/crlfe/" ] [ H.text "Patreon" ]
+            , H.text "."
             ]
-            [ H.text options.loc.buttons.open ]
-        , H.button
-            [ HA.disabled options.disabled
-            , HE.onClick (options.route SaveClicked)
+        , H.div [ HA.class "tMenu" ]
+            [ H.button
+                [ HA.disabled disabled
+                , HE.onClick options.onShowLicenses
+                ]
+                [ H.text "Licenses and Warranty Disclaimers" ]
             ]
-            [ H.text options.loc.buttons.save ]
+        , H.footer [ HA.class "tMenu" ]
+            [ H.button
+                [ HA.disabled disabled
+                , HE.onClick (options.route CancelClicked)
+                ]
+                [ H.text options.loc.buttons.close ]
+            ]
         ]
-    , H.div [ cssClasses.fields ]
-        [ H.label [ HA.for "sTitle" ]
-            [ H.text options.loc.labels.title ]
-        , H.input
-            [ HA.id "sTitle"
-            , HA.value model.title
-            , HA.disabled options.disabled
-            , HE.onInput (options.route << TitleChanged)
-            ]
-            []
-        , H.label [ HA.for "sTables" ]
-            [ H.text options.loc.labels.tables ]
-        , H.input
-            [ HA.id "sTables"
-            , HA.type_ "number"
-            , HA.min "1"
-            , HA.max "100"
-            , HA.value model.tables
-            , HA.disabled options.disabled
-            , HE.onInput (options.route << TablesChanged)
-            ]
-            []
-        , H.label [ cssClasses.error ] [ H.text (lengthError options model.tables) ]
-        , H.label [ HA.for "sGames" ]
-            [ H.text options.loc.labels.games ]
-        , H.input
-            [ HA.id "sGames"
-            , HA.type_ "number"
-            , HA.min "1"
-            , HA.max "100"
-            , HA.value model.games
-            , HA.disabled options.disabled
-            , HE.onInput (options.route << GamesChanged)
-            ]
-            []
-        , H.label [ cssClasses.error ] [ H.text (lengthError options model.games) ]
-        ]
-    , valuesStatus options model
-    ]
+
+
+webLink : List (H.Attribute m) -> List (H.Html m) -> H.Html m
+webLink attrs body =
+    let
+        disabled =
+            List.any (\x -> x == HA.disabled True) attrs
+
+        childAttrs =
+            List.filter (\x -> x /= HA.disabled True) attrs
+                ++ [ HA.rel "noopener", HA.target "_blank" ]
+    in
+    if disabled then
+        H.span childAttrs body
+
+    else
+        H.a childAttrs body
 
 
 update : Msg -> Options m -> Model -> ( Model, Cmd m )
@@ -284,6 +377,12 @@ update msg options model =
               }
             , Cmd.none
             )
+
+        SetupTabClicked ->
+            ( { model | tab = SetupTab }, Cmd.none )
+
+        AboutTabClicked ->
+            ( { model | tab = AboutTab }, Cmd.none )
 
         LanguageChanged name ->
             case Intl.localeFromName name of
@@ -376,8 +475,7 @@ valuesStatus options model =
     in
     if model.oldScores.values == model.values then
         if model.oldScores.tables <= tables && model.oldScores.games <= games then
-            H.div [ cssClasses.status ]
-                [ H.text options.loc.status.valuesUnchanged ]
+            H.div [ cssClasses.status ] []
 
         else
             H.div [ cssClasses.status, cssClasses.error ]

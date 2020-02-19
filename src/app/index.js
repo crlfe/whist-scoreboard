@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu } from "electron";
+import { app, BrowserWindow, Menu, shell } from "electron";
 import { autoUpdater } from "electron-updater";
 import path from "path";
 
@@ -15,7 +15,12 @@ function createMainWindow() {
       preload: path.join(app.getAppPath(), "preload.js")
     }
   });
-  w.loadFile("web/index.html");
+  w.loadFile("web/index.html").then(() => {
+    w.webContents.on("new-window", (event, url) => {
+      shell.openExternal(url);
+      event.preventDefault();
+    });
+  });
 }
 
 app.on("ready", () => {

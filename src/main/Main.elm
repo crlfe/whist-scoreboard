@@ -22,6 +22,7 @@ port storage : JD.Value -> Cmd msg
 
 type alias Flags =
     { languages : List String
+    , version : String
     , licenses : String
     , width : Float
     , height : Float
@@ -32,6 +33,7 @@ type alias Flags =
 type alias Model =
     { locale : Intl.Locale
     , loc : Intl.Localized
+    , version : String
     , licenses : String
     , scores : Scores
     , sheet : Sheet.Model
@@ -86,6 +88,7 @@ init flags =
         model =
             { locale = locale
             , loc = loc
+            , version = flags.version
             , licenses = flags.licenses
             , scores = scores
             , sheet = Sheet.init
@@ -224,7 +227,7 @@ viewLicenses model =
 
         options =
             { defaults
-                | title = "Licenses"
+                | title = "Licenses and Warranty Disclaimers"
                 , onClose = Just HideLicenses
                 , onEnter = Just HideLicenses
                 , footer =
@@ -384,6 +387,7 @@ sheetOptions model =
 setupOptions : Model -> Setup.Options Msg
 setupOptions model =
     { loc = model.loc
+    , version = model.version
     , disabled =
         model.showLicenses
             || Maybe.Extra.isJust model.error
