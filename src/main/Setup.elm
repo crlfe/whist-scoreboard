@@ -95,7 +95,7 @@ view options model =
         ]
         [ H.div
             [ cssDialog.dialogInner
-            , HA.style "min-width" "24rem"
+            , HA.style "min-width" "22rem"
             ]
             [ H.div
                 [ cssDialog.dialog ]
@@ -115,7 +115,7 @@ viewHeader options model =
             , HA.style "padding" "0"
             , HA.style "opacity" (xif options.disabled "25%" "100%")
             , HA.style "display" "grid"
-            , HA.style "grid-template-columns" "repeat(2, 8rem)"
+            , HA.style "grid-template-columns" "repeat(2, 7.5rem)"
             , HA.style "grid-template-rows" "2rem"
             , HA.style "place-content" "start"
             , HA.style "place-items" "stretch"
@@ -131,7 +131,7 @@ viewHeader options model =
                                 "0rem"
 
                             AboutTab ->
-                                "8rem"
+                                "7.5rem"
                         , ")"
                         ]
                     )
