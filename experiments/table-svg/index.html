@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      html,
+      body,
+      svg {
+        margin: 0;
+        padding: 0;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <svg id="main">
+      <defs>
+        <style>
+          rect.grid {
+            fill: none;
+            stroke: #000;
+            stroke-width: 1;
+          }
+        </style>
+        <symbol id="tally-0"></symbol>
+        <symbol id="tally-1">
+          <rect x="14" y="4" width="3" height="15" />
+        </symbol>
+        <symbol id="tally-2">
+          <rect x="11" y="4" width="3" height="15" />
+          <rect x="17" y="4" width="3" height="15" />
+        </symbol>
+        <symbol id="tally-3">
+          <rect x="8" y="4" width="3" height="15" />
+          <rect x="14" y="4" width="3" height="15" />
+          <rect x="20" y="4" width="3" height="15" />
+        </symbol>
+        <symbol id="tally-4">
+          <rect x="5" y="4" width="3" height="15" />
+          <rect x="11" y="4" width="3" height="15" />
+          <rect x="17" y="4" width="3" height="15" />
+          <rect x="23" y="4" width="3" height="15" />
+        </symbol>
+      </defs>
+    </svg>
+    <script>
+      const games = 50;
+      const tables = 50;
+      const main = document.getElementById("main");
+
+      main.viewBox = `0 0 ${games * 32} ${tables * 16}`;
+      main.style.width = `${games * 32}px`;
+      main.style.height = `${tables * 24}px`;
+      for (let game = 0; game < games; game++) {
+        for (let table = 0; table < tables; table++) {
+          const x = game * 32;
+          const y = table * 24;
+
+          const e = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          e.setAttribute("transform", `translate(${x},${y})`);
+          const value = Math.floor(Math.pow(Math.random(), 3) * 4.0);
+          e.innerHTML = `
+            <rect class="grid" width="32" height="24" />
+            <use id="cell-${table}-${game}" xlink:href="#tally-${value}" />
+          `;
+          main.appendChild(e);
+        }
+      }
+
+      setInterval(() => {
+        const game = Math.floor(Math.random() * games);
+        const table = Math.floor(Math.random() * tables);
+        const e = document.getElementById(`cell-${table}-${game}`);
+        if (e) {
+          const value = Math.floor(Math.pow(Math.random(), 3) * 4.0);
+          e.setAttribute("xlink:href", `#tally-${value}`);
+        }
+      }, 1000);
+    </script>
+  </body>
+</html>
