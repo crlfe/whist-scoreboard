@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      html {
+        width: 100%;
+        height: 100%;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        display: block;
+        overflow: hidden;
+        display: grid;
+      }
+
+      .outer {
+        font-size: 2vh;
+
+        overflow: hidden;
+        display: grid;
+        grid: auto / 10em auto;
+        place-content: center;
+      }
+
+      .left-panel {
+        padding: 1em;
+        display: grid;
+        grid: 8em 8em 8em / 8em;
+        grid-gap: 1em;
+        place-content: center;
+      }
+
+      .suit,
+      .away {
+        border: 0.0625em solid #000;
+        font-size: 200%;
+        display: grid;
+        place-items: center;
+      }
+
+      .sheet-scroller {
+        overflow: auto;
+        display: grid;
+        grid: 3em 75em / 5em 100em 10em;
+      }
+
+      .sheet-top-left {
+        grid-area: 1 / 1;
+        position: sticky;
+        top: 0;
+        left: 0;
+        background-color: #fff;
+
+        display: grid;
+        grid: 1.5em 1.5em / 5em;
+        place-items: center;
+      }
+
+      .sheet-top-right {
+        grid-area: 1 / 3;
+        position: sticky;
+        top: 0;
+        right: 0;
+        background-color: #fff;
+
+        display: grid;
+        grid: 1.5em 1.5em / 5em 5em;
+        place-items: center;
+      }
+
+      .sheet-top {
+        grid-area: 1 / 2;
+        position: sticky;
+        top: 0;
+        background-color: #fff;
+
+        display: grid;
+        grid: 1.5em 1.5em / repeat(50, 2em);
+        place-items: center;
+      }
+
+      .sheet-left {
+        grid-area: 2 / 1;
+        position: sticky;
+        left: 0;
+        background-color: #fff;
+
+        display: grid;
+        grid: repeat(50, 1.5em) / 5em;
+        place-items: center;
+      }
+
+      .sheet-right {
+        grid-area: 2 / 3;
+        position: sticky;
+        right: 0;
+        background-color: #fff;
+
+        display: grid;
+        grid: repeat(50, 1.5em) / 5em 5em;
+        place-items: center;
+      }
+      #sheet {
+        grid-area: 2 / 2;
+      }
+      svg {
+        margin: 0;
+        padding: 0;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="outer">
+      <div class="left-panel">
+        <div class="suit">Spades</div>
+        <div class="away" style="background-color: #00F; color: #FFF;">
+          Blue
+        </div>
+        <div class="away" style="background-color: #F00; color: #FFF;">Red</div>
+      </div>
+      <div class="sheet-scroller">
+        <div class="sheet-top">
+          <div style="grid-area: 1 / 24 / 1 / span 4">Games</div>
+        </div>
+        <div class="sheet-left"></div>
+        <div class="sheet-right"></div>
+        <div class="sheet-top-left">
+          <div style="grid-area: 2 / 1">Tables</div>
+        </div>
+        <div class="sheet-top-right">
+          <div style="grid-area: 2 / 1">Tables</div>
+          <div style="grid-area: 2 / 2">Totals</div>
+        </div>
+
+        <svg id="sheet">
+          <defs>
+            <style>
+              rect.grid {
+                fill: none;
+                stroke: #000;
+                stroke-width: 1;
+              }
+            </style>
+            <symbol id="tally-0"></symbol>
+            <symbol id="tally-1">
+              <rect x="14" y="4" width="3" height="15" />
+            </symbol>
+            <symbol id="tally-2">
+              <rect x="11" y="4" width="3" height="15" />
+              <rect x="17" y="4" width="3" height="15" />
+            </symbol>
+            <symbol id="tally-3">
+              <rect x="8" y="4" width="3" height="15" />
+              <rect x="14" y="4" width="3" height="15" />
+              <rect x="20" y="4" width="3" height="15" />
+            </symbol>
+            <symbol id="tally-4">
+              <rect x="5" y="4" width="3" height="15" />
+              <rect x="11" y="4" width="3" height="15" />
+              <rect x="17" y="4" width="3" height="15" />
+              <rect x="23" y="4" width="3" height="15" />
+            </symbol>
+          </defs>
+        </svg>
+      </div>
+    </div>
+    <script>
+      const games = 50;
+      const tables = 50;
+      const main = document.getElementById("sheet");
+
+      main.setAttribute("viewBox", `0 0 ${games * 32} ${tables * 24}`);
+      main.style.width = `${games * 2}em`;
+      main.style.height = `${tables * 1.5}em`;
+      for (let game = 0; game < games; game++) {
+        for (let table = 0; table < tables; table++) {
+          const x = game * 32;
+          const y = table * 24;
+
+          const e = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          e.setAttribute("transform", `translate(${x},${y})`);
+          const value = Math.floor(Math.pow(Math.random(), 3) * 4.0);
+          e.innerHTML = `
+            <rect class="grid" width="32" height="24" />
+            <use id="cell-${table}-${game}" xlink:href="#tally-${value}" />
+          `;
+          main.appendChild(e);
+        }
+      }
+
+      const sheetTop = document.querySelector(".sheet-top");
+      for (let game = 0; game < games; game++) {
+        const e = document.createElement("div");
+        e.setAttribute("style", "grid-area: 2");
+        e.innerText = String(game + 1);
+        sheetTop.appendChild(e);
+      }
+
+      const sheetLeft = document.querySelector(".sheet-left");
+      for (let table = 0; table < tables; table++) {
+        const e = document.createElement("div");
+        e.innerText = String(table + 1);
+        sheetLeft.appendChild(e);
+      }
+
+      const sheetRight = document.querySelector(".sheet-right");
+      for (let table = 0; table < tables; table++) {
+        let e = document.createElement("div");
+        e.innerText = String(table + 1);
+        sheetRight.appendChild(e);
+
+        e = document.createElement("div");
+        e.innerText = String(5);
+        sheetRight.appendChild(e);
+      }
+
+      setInterval(() => {
+        const game = Math.floor(Math.random() * games);
+        const table = Math.floor(Math.random() * tables);
+        const e = document.getElementById(`cell-${table}-${game}`);
+        if (e) {
+          const value = Math.floor(Math.pow(Math.random(), 3) * 4.0);
+          e.setAttribute("xlink:href", `#tally-${value}`);
+        }
+      }, 1000);
+    </script>
+  </body>
+</html>
