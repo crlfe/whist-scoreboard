@@ -95,7 +95,7 @@ view options model =
         ]
         [ H.div
             [ cssDialog.dialogInner
-            , HA.style "min-width" "22rem"
+            , HA.style "width" "22rem"
             ]
             [ H.div
                 [ cssDialog.dialog ]
