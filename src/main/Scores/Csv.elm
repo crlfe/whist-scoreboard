@@ -1,7 +1,7 @@
 module Scores.Csv exposing (decode, encode)
 
 import Array exposing (Array)
-import Maybe.Extra
+import Common exposing (arrayMapAndThen, listJust)
 import Scores exposing (Scores)
 
 
@@ -29,9 +29,9 @@ decode title string =
 
         values : Maybe (Array (Array Int))
         values =
-            Maybe.Extra.traverseArray
+            arrayMapAndThen
                 (\row ->
-                    Maybe.Extra.traverseArray
+                    arrayMapAndThen
                         (\col ->
                             Array.get col row
                                 |> Maybe.map String.trim
@@ -165,7 +165,7 @@ encode scores =
                 ]
 
         tables =
-            Maybe.Extra.values
+            listJust
                 (List.map
                     (\i ->
                         Maybe.map3 (encodeTable i)

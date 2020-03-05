@@ -3,14 +3,13 @@ port module Main exposing (Model, main)
 import Array
 import Browser
 import Browser.Events
-import Common exposing (KeyboardEvent, arrayGet2, decodeKeyboardEvent)
+import Common exposing (KeyboardEvent, arrayGet2, decodeKeyboardEvent, isJust, listJust)
 import Html as H
 import Html.Attributes as HA
 import Html.Events as HE
 import Intl
 import Json.Decode as JD
 import Json.Encode as JE
-import Maybe.Extra
 import Scores exposing (Scores)
 import Setup
 import Sheet
@@ -196,7 +195,7 @@ view : Model -> Browser.Document Msg
 view model =
     { title = model.scores.title
     , body =
-        Maybe.Extra.values
+        listJust
             [ Just (Sheet.view (sheetOptions model) model.sheet)
             , maybeViewBarrier model
             , Maybe.map (Setup.view (setupOptions model)) model.setup
@@ -212,7 +211,7 @@ view model =
 
 maybeViewBarrier : Model -> Maybe (H.Html msg)
 maybeViewBarrier model =
-    if Maybe.Extra.isJust model.setup || Maybe.Extra.isJust model.error then
+    if isJust model.setup || isJust model.error then
         Just (H.div [ HA.class "barrier" ] [])
 
     else
@@ -348,10 +347,12 @@ decodeKeyDown model =
     decodeKeyboardEvent
         |> JD.andThen
             (\event ->
-                Maybe.Extra.unwrap
-                    (JD.fail "ignored input")
-                    JD.succeed
-                    (handleKeyDown model event)
+                case handleKeyDown model event of
+                    Just msg ->
+                        JD.succeed msg
+
+                    Nothing ->
+                        JD.fail "ignored input"
             )
 
 
@@ -374,9 +375,9 @@ sheetOptions : Model -> Sheet.Options Msg
 sheetOptions model =
     { loc = model.loc
     , disabled =
-        Maybe.Extra.isJust model.setup
+        isJust model.setup
             || model.showLicenses
-            || Maybe.Extra.isJust model.error
+            || isJust model.error
     , scores = model.scores
     , route = SheetMsg
     , onIncrement = SheetIncremented
@@ -390,7 +391,7 @@ setupOptions model =
     , version = model.version
     , disabled =
         model.showLicenses
-            || Maybe.Extra.isJust model.error
+            || isJust model.error
     , route = SetupMsg
     , onClose = SetupClosed
     , onError = ShowError

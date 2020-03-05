@@ -1,9 +1,12 @@
 module Common exposing
     ( KeyboardEvent
     , arrayGet2
+    , arrayMapAndThen
     , arrayMapOne
     , cssClasses
     , decodeKeyboardEvent
+    , isJust
+    , listJust
     , sendMessage
     , xif
     )
@@ -11,7 +14,6 @@ module Common exposing
 import Array exposing (Array)
 import Html.Attributes as HA
 import Json.Decode as JD
-import Maybe.Extra
 import Task
 
 
@@ -27,10 +29,40 @@ type alias KeyboardEvent =
 
 arrayMapOne : (a -> a) -> Int -> Array a -> Array a
 arrayMapOne func index array =
-    Array.get index array
-        |> Maybe.map func
-        |> Maybe.Extra.unwrap array
-            (\value -> Array.set index value array)
+    case Array.get index array of
+        Just value ->
+            Array.set index (func value) array
+
+        Nothing ->
+            array
+
+
+arrayMapAndThen : (a -> Maybe b) -> Array a -> Maybe (Array b)
+arrayMapAndThen func =
+    Array.foldl (func >> Maybe.map2 Array.push) (Just Array.empty)
+
+
+isJust : Maybe a -> Bool
+isJust maybe =
+    case maybe of
+        Just _ ->
+            True
+
+        Nothing ->
+            False
+
+
+listJust : List (Maybe a) -> List a
+listJust list =
+    case list of
+        [] ->
+            []
+
+        (Just value) :: xs ->
+            value :: listJust xs
+
+        Nothing :: xs ->
+            listJust xs
 
 
 cssClasses =
