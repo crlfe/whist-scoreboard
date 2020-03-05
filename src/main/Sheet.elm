@@ -35,7 +35,8 @@ type alias Model =
 
 
 type Msg
-    = SetupClicked
+    = Noop
+    | SetupClicked
     | ShowHideRanksClicked
     | TablePressed Int
     | GamePressed Int
@@ -442,11 +443,15 @@ viewTopOverlay options model =
 update : Msg -> Options m -> Model -> ( Model, Cmd m )
 update msg options model =
     case msg of
+        Noop ->
+            ( model, Cmd.none )
+
         SetupClicked ->
             ( clearSelection model, sendMessage options.onSetup )
 
         ShowHideRanksClicked ->
-            ( updateShowHideRanksClicked model, Cmd.none )
+            updateShowHideRanksClicked model
+                |> Tuple.mapSecond (Cmd.map options.route)
 
         TablePressed table ->
             updateTablePressed table options model
@@ -478,13 +483,29 @@ update msg options model =
             ( { model | zoom = model.zoom - 1 }, Cmd.none )
 
 
-updateShowHideRanksClicked : Model -> Model
+updateShowHideRanksClicked : Model -> ( Model, Cmd Msg )
 updateShowHideRanksClicked model =
     let
         cleared =
             clearSelection model
     in
-    { cleared | showRanks = not model.showRanks }
+    ( { cleared | showRanks = not model.showRanks }
+    , if model.showRanks then
+        Cmd.none
+
+      else
+        scrollToRight "sheet"
+    )
+
+
+scrollToRight : String -> Cmd Msg
+scrollToRight id =
+    Browser.Dom.getViewportOf id
+        |> Task.andThen
+            (\info ->
+                Browser.Dom.setViewportOf id info.scene.width info.viewport.y
+            )
+        |> Task.attempt (\_ -> Noop)
 
 
 updateTablePressed : Int -> Options m -> Model -> ( Model, Cmd m )
