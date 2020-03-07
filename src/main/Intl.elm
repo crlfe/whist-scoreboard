@@ -24,6 +24,7 @@ type alias Localized =
     , labels :
         { about : String
         , error : String
+        , game : String
         , games : String
         , language : String
         , message : String
@@ -124,6 +125,7 @@ localeEnglish =
     , labels =
         { about = "About"
         , error = "Error"
+        , game = "Game"
         , games = "Games"
         , language = "Language"
         , message = "Message"
@@ -166,6 +168,7 @@ localeFrench =
     , labels =
         { about = "À propos"
         , error = "Erreur"
+        , game = "Partie"
         , games = "Parties"
         , language = "Langue"
         , message = "Message"

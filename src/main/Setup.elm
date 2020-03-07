@@ -25,6 +25,8 @@ type alias Options m =
     , onError : String -> m
     , onLocale : Intl.Locale -> m
     , onShowLicenses : m
+    , showPanel : Bool
+    , setShowPanel : Bool -> m
     }
 
 
@@ -333,6 +335,18 @@ viewAbout options model =
             , H.text " and supporting my work through "
             , webLink [ HA.disabled disabled, HA.href "https://patreon.com/crlfe/" ] [ H.text "Patreon" ]
             , H.text "."
+            ]
+        , H.div [ HA.class "tMenu" ]
+            [ H.label []
+                [ H.input
+                    [ HA.type_ "checkbox"
+                    , HA.style "margin-right" "0.5em"
+                    , HA.checked options.showPanel
+                    , HE.onCheck options.setShowPanel
+                    ]
+                    []
+                , H.text "Testing: Show side panel"
+                ]
             ]
         , H.div [ HA.class "tMenu" ]
             [ H.button

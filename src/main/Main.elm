@@ -54,6 +54,7 @@ type Msg
     | ShowError String
     | LocaleChanged Intl.Locale
     | WindowResized Int Int
+    | SetShowPanel Bool
 
 
 main : Program Flags Model Msg
@@ -310,6 +311,13 @@ update msg model =
         WindowResized width height ->
             ( updateSheetSize (toFloat width) (toFloat height) model, Cmd.none )
 
+        SetShowPanel value ->
+            let
+                sheet =
+                    model.sheet
+            in
+            ( { model | sheet = { sheet | showPanel = value } }, Cmd.none )
+
 
 updateSheetSize : Float -> Float -> Model -> Model
 updateSheetSize width height model =
@@ -397,6 +405,8 @@ setupOptions model =
     , onError = ShowError
     , onLocale = LocaleChanged
     , onShowLicenses = ShowLicenses
+    , showPanel = model.sheet.showPanel
+    , setShowPanel = SetShowPanel
     }
 
 

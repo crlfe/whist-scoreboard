@@ -2,13 +2,14 @@ module Sheet exposing (Model, Msg, Options, handleKeyDown, init, update, view)
 
 import Array exposing (Array)
 import Browser.Dom
-import Common exposing (KeyboardEvent, sendMessage, xif)
+import Common exposing (KeyboardEvent, listJust, sendMessage, xif)
 import Html as H
 import Html.Attributes as HA
 import Html.Events as HE
 import Intl
 import Json.Decode as JD
 import Scores exposing (Scores)
+import Suit
 import Task
 
 
@@ -29,6 +30,8 @@ type alias Model =
     , currGame : Maybe Int
     , markTables : List Int
     , markTies : List ( Int, Int )
+    , showPanel : Bool
+    , panelGame : Int
     , showRanks : Bool
     , zoom : Float
     }
@@ -61,6 +64,8 @@ init =
     , currGame = Nothing
     , markTables = []
     , markTies = []
+    , showPanel = False
+    , panelGame = 0
     , showRanks = False
     , zoom = 0
     }
@@ -94,25 +99,125 @@ view options model =
                 Nothing
     in
     H.div
-        [ HA.id "sheet"
-        , cssClasses.sheet
-        , HA.style "font-size" (String.fromFloat scale ++ "px")
-        , HE.onFocus (options.route Focused)
-        , HE.onBlur (options.route Blurred)
-        , dataEventMouseDown options.route
+        [ HA.style "display" "grid"
+        , HA.style "grid" "1fr / auto 1fr"
+        , HA.style "overflow" "hidden"
         ]
-        [ viewMainMarks options.scores.tables options.scores.games model
-        , viewMain options.scores
-        , viewLeftMarks options.scores.tables model
-        , viewRightMarks options.scores.tables model
-        , viewLeft options.scores.tables
-        , viewRight (Scores.totals options.scores) ranks
-        , viewTopMarks options.scores.games model
-        , viewTop options.scores.games options model
-        , viewTopRight options model
-        , viewTopOverlay options model
-        , viewTopLeft options model
+        (listJust
+            [ if model.showPanel then
+                viewPanel options model |> Just
+
+              else
+                Nothing
+            , H.div
+                [ HA.id "sheet"
+                , cssClasses.sheet
+                , HA.style "grid-area" "1 / 2"
+                , HA.style "font-size" (String.fromFloat scale ++ "px")
+                , HE.onFocus (options.route Focused)
+                , HE.onBlur (options.route Blurred)
+                , dataEventMouseDown options.route
+                ]
+                [ viewMainMarks options.scores.tables options.scores.games model
+                , viewMain options.scores
+                , viewLeftMarks options.scores.tables model
+                , viewRightMarks options.scores.tables model
+                , viewLeft options.scores.tables
+                , viewRight (Scores.totals options.scores) ranks
+                , viewTopMarks options.scores.games model
+                , viewTop options.scores.games options model
+                , viewTopRight options model
+                , viewTopOverlay options model
+                , viewTopLeft options model
+                ]
+                |> Just
+            ]
+        )
+
+
+viewPanel : Options m -> Model -> H.Html m
+viewPanel options model =
+    H.div
+        [ HA.style "display" "grid"
+        , HA.style "padding" "1rem"
+        , HA.style "grid" "auto 8rem 8rem 8rem / 8rem"
+        , HA.style "grid-gap" "1rem"
+        , HA.style "place-content" "center"
+        , HA.style "font-size" "2rem"
         ]
+        [ H.div
+            [ HA.style "font-size" "1.6rem"
+            , HA.style "text-align" "center"
+            ]
+            [ H.text (options.loc.labels.game ++ " " ++ String.fromInt (model.panelGame + 1)) ]
+        , H.div []
+            [ Suit.view (suitFor model.panelGame) [] ]
+        , H.div
+            [ HA.style "border" "2px solid #000"
+            , HA.style "background-color" (awayOneFor model.panelGame)
+            , HA.style "display" "grid"
+            , HA.style "place-items" "center"
+            ]
+            []
+        , H.div
+            [ HA.style "border" "2px solid #000"
+            , HA.style "background-color" (awayTwoFor model.panelGame)
+            , HA.style "display" "grid"
+            , HA.style "place-items" "center"
+            ]
+            []
+        ]
+
+
+suitFor : Int -> Suit.Suit
+suitFor game =
+    case remainderBy 5 game of
+        0 ->
+            Suit.Spade
+
+        1 ->
+            Suit.Heart
+
+        2 ->
+            Suit.NoTrump
+
+        3 ->
+            Suit.Diamond
+
+        _ ->
+            Suit.Club
+
+
+awayOneFor : Int -> String
+awayOneFor game =
+    case remainderBy 3 game of
+        0 ->
+            "#00F"
+
+        1 ->
+            "#FFF"
+
+        2 ->
+            "#F00"
+
+        _ ->
+            "#000"
+
+
+awayTwoFor : Int -> String
+awayTwoFor game =
+    case remainderBy 3 game of
+        0 ->
+            "#FFF"
+
+        1 ->
+            "#F00"
+
+        2 ->
+            "#00F"
+
+        _ ->
+            "#000"
 
 
 viewMainMarks : Int -> Int -> Model -> H.Html m
@@ -469,7 +574,7 @@ update msg options model =
             ( model, Cmd.none )
 
         Blurred ->
-            ( clearSelection model, Cmd.none )
+            ( model, Cmd.none )
 
         Escaped ->
             ( clearSelection model
@@ -516,7 +621,7 @@ updateTablePressed table options model =
     in
     case model.currGame of
         Just game ->
-            ( { cleared | currGame = Just game, currTable = Just table }
+            ( { cleared | currGame = Just game, currTable = Just table, panelGame = game }
             , sendMessage (options.onIncrement table game)
             )
 
@@ -530,7 +635,7 @@ updateGamePressed game model =
         cleared =
             clearSelection model
     in
-    { cleared | currGame = Just game }
+    { cleared | currGame = Just game, panelGame = game }
 
 
 updateRankPressed : Int -> Options m -> Model -> Model
@@ -557,7 +662,7 @@ updateValuePressed table game options model =
         cleared =
             clearSelection model
     in
-    ( { cleared | currTable = Just table, currGame = Just game }
+    ( { cleared | currTable = Just table, currGame = Just game, panelGame = game }
     , sendMessage (options.onIncrement table game)
     )
 
