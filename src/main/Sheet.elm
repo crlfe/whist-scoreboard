@@ -118,7 +118,9 @@ view options model =
                 , HE.onBlur (options.route Blurred)
                 , dataEventMouseDown options.route
                 ]
-                [ viewMainMarks options.scores.tables options.scores.games model
+                [ -- Fix scrolling in Firefox (see experiments/sticky-scroll-bug).
+                  H.div [ HA.style "grid-area" "1 / 1 / -1 / -1" ] []
+                , viewMainMarks options.scores.tables options.scores.games model
                 , viewMain options.scores
                 , viewLeftMarks options.scores.tables model
                 , viewRightMarks options.scores.tables model
