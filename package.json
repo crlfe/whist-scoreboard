@@ -1,7 +1,7 @@
 {
   "name": "whist-scoreboard",
   "description": "Scoreboard for a variant of Flag Whist",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "author": {
     "name": "Chris Wolfe",
     "url": "https://crlfe.ca/"
