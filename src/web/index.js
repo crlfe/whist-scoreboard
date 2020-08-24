@@ -33,13 +33,3 @@ var app = Elm.Main.init({
 app.ports.storage.subscribe(function(data) {
   localStorage.setItem(localName, JSON.stringify(data));
 });
-
-try {
-  const hitServer =
-    process.env.NODE_ENV === "production"
-      ? "https://crlfe.ca"
-      : "http://localhost:5000";
-  const img = new Image();
-  img.src = `${hitServer}/f/hit?e=whist-scoreboard-${version}`;
-  img.addEventListener("load", function() {});
-} catch (err) {}
