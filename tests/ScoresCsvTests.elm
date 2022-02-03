@@ -1,6 +1,5 @@
 module ScoresCsvTests exposing (decodeTests, encodeTests)
 
-import Array
 import Expect
 import Scores
 import Scores.Csv

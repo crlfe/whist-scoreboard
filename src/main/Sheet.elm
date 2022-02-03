@@ -434,7 +434,7 @@ viewTop games options model =
 
 
 viewTopLeft : Options m -> Model -> H.Html m
-viewTopLeft options model =
+viewTopLeft options _ =
     H.div [ cssClasses.topLeft, cssClasses.dark ]
         [ H.div [ cssClasses.box, gridArea 1 1 3 2 ] []
         , H.div [ cssClasses.label, gridArea 2 1 3 2 ]
@@ -670,7 +670,7 @@ updateValuePressed table game options model =
 
 
 handleKeyDown : KeyboardEvent -> Options m -> Model -> Maybe m
-handleKeyDown event options model =
+handleKeyDown event options _ =
     case event.key of
         "-" ->
             Just (options.route ZoomOut)

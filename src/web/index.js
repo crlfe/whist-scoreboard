@@ -1,6 +1,6 @@
 import { Elm } from "../main/Main.elm";
 
-import { version } from "../../package.json";
+import packageJson from "../../package.json";
 import license from "../../LICENSE.txt";
 import thirdPartyLicenses from "./ThirdPartyLicenses.txt";
 
@@ -11,7 +11,7 @@ var app = Elm.Main.init({
     languages: navigator.languages || [
       navigator.language || navigator.userLanguage
     ],
-    version,
+    version: packageJson.version,
     licenses:
       license +
       "\n===\n" +

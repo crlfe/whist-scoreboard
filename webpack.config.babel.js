@@ -7,11 +7,11 @@ import webpack from "webpack";
 const webConfig = (target, mode) => ({
   context: path.resolve(__dirname),
   entry: {
-    index: "./src/web"
+    index: "./src/web",
   },
   target,
   output: {
-    path: path.resolve(__dirname, "dist", target)
+    path: path.resolve(__dirname, "dist", target),
   },
   module: {
     rules: [
@@ -22,52 +22,55 @@ const webConfig = (target, mode) => ({
           {
             loader: "elm-webpack-loader",
             options: {
-              optimize: mode === "production"
-            }
-          }
-        ]
+              optimize: mode === "production",
+            },
+          },
+        ],
       },
       {
         test: /\.txt$/,
-        use: "raw-loader"
-      }
-    ]
+        use: "raw-loader",
+      },
+    ],
   },
   plugins: [
     new CleanWebpackPlugin(),
-    new CopyWebpackPlugin([{ from: "static" }]),
+    new CopyWebpackPlugin({
+      patterns: [{ from: "static" }],
+    }),
     new webpack.DefinePlugin({
-      "process.env.NODE_ENV": JSON.stringify(mode)
-    })
-  ]
+      "process.env.NODE_ENV": JSON.stringify(mode),
+    }),
+  ],
 });
 
 export default (env, argv) => [
+  // Default target for webpack-dev-server must be first.
+  webConfig("web", argv.mode),
+  webConfig("electron-renderer", argv.mode),
   {
     context: path.resolve(__dirname),
     entry: {
       index: "./src/app",
-      preload: "./src/app/preload"
+      preload: "./src/app/preload",
     },
     target: "electron-main",
     output: {
-      path: path.resolve(__dirname, "dist", "electron-main")
+      path: path.resolve(__dirname, "dist", "electron-main"),
     },
     module: {
       rules: [
         {
           test: /\.txt$/,
-          use: "raw-loader"
-        }
-      ]
+          use: "raw-loader",
+        },
+      ],
     },
     plugins: [
       new CleanWebpackPlugin(),
       new LicenseWebpackPlugin({
-        outputFilename: "ThirdPartyLicenses.txt"
-      })
-    ]
+        outputFilename: "ThirdPartyLicenses.txt",
+      }),
+    ],
   },
-  webConfig("electron-renderer", argv.mode),
-  webConfig("web", argv.mode)
 ];
