@@ -10,9 +10,9 @@ jobs:
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v2
         with:
-          node-version: "10.x"
+          node-version: "16"
       - run: yarn install
       - run: yarn build
       - run: yarn package --publish=always
@@ -23,7 +23,7 @@ jobs:
           cp dist/latest.yml dist/win
           cp dist/*.exe dist/win
           cp dist/*.exe.blockmap dist/win
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v2
         with:
           name: "Windows"
           path: "dist/win"
