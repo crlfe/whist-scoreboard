@@ -15,7 +15,7 @@ jobs:
           node-version: "16"
       - run: yarn install
       - run: yarn build
-      - run: yarn package --publish=always
+      - run: yarn package --publish=onTagOrDraft
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: |
