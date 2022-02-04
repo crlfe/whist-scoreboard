@@ -345,7 +345,7 @@ viewAbout options model =
                     , HE.onCheck options.setShowPanel
                     ]
                     []
-                , H.text "Testing: Show side panel"
+                , H.text "Show side panel"
                 ]
             ]
         , H.div [ HA.class "tMenu" ]
