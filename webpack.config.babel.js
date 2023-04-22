@@ -42,6 +42,14 @@ const webConfig = (target, mode) => ({
       "process.env.NODE_ENV": JSON.stringify(mode),
     }),
   ],
+  devServer:
+    target !== "web"
+      ? undefined
+      : {
+          client: {
+            overlay: false,
+          },
+        },
 });
 
 export default (env, argv) => [
