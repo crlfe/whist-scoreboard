@@ -26,8 +26,10 @@ type alias Options m =
 type alias Model =
     { maxWidth : Float
     , maxHeight : Float
+    , currRow : Maybe Int
     , currTable : Maybe Int
     , currGame : Maybe Int
+    , hideTables : List Int
     , markTables : List Int
     , markTies : List ( Int, Int )
     , showPanel : Bool
@@ -47,6 +49,8 @@ type Msg
     | ValuePressed Int Int
     | Focused
     | Blurred
+    | HideTable
+    | ShowTable
     | Escaped
     | ZoomIn
     | ZoomOut
@@ -60,8 +64,10 @@ init : Model
 init =
     { maxWidth = 0
     , maxHeight = 0
+    , currRow = Nothing
     , currTable = Nothing
     , currGame = Nothing
+    , hideTables = []
     , markTables = []
     , markTies = []
     , showPanel = True
@@ -74,6 +80,13 @@ init =
 view : Options m -> Model -> H.Html m
 view options model =
     let
+        tableByRow =
+            List.range 0 (options.scores.tables - 1)
+                |> List.filter (\i -> not (List.member i model.hideTables))
+
+        rows =
+            List.length tableByRow
+
         labelColumns =
             xif model.showRanks 4.0 3.0
 
@@ -81,7 +94,7 @@ view options model =
             labelColumns * 4.0 + 4.5 * 2.0
 
         heightInEm =
-            (2.0 + toFloat options.scores.tables + 1.5) * 1.5
+            (2.0 + toFloat rows + 1.5) * 1.5
 
         scale =
             (min
@@ -120,12 +133,12 @@ view options model =
                 ]
                 [ -- Fix scrolling in Firefox (see experiments/sticky-scroll-bug).
                   H.div [ HA.style "grid-area" "1 / 1 / -1 / -1" ] []
-                , viewMainMarks options.scores.tables options.scores.games model
-                , viewMain options.scores
-                , viewLeftMarks options.scores.tables model
-                , viewRightMarks options.scores.tables model
-                , viewLeft options.scores.tables
-                , viewRight (Scores.totals options.scores) ranks
+                , viewMainMarks rows options.scores.games model
+                , viewMain tableByRow options.scores
+                , viewLeftMarks rows model
+                , viewRightMarks rows model
+                , viewLeft tableByRow
+                , viewRight tableByRow (Scores.totals options.scores) ranks
                 , viewTopMarks options.scores.games model
                 , viewTop options.scores.games options model
                 , viewTopRight options model
@@ -223,10 +236,10 @@ awayTwoFor game =
 
 
 viewMainMarks : Int -> Int -> Model -> H.Html m
-viewMainMarks tables games model =
+viewMainMarks numRows games model =
     H.div
         [ cssClasses.main
-        , gridFixedRows tables
+        , gridFixedRows numRows
         , gridFixedColumns games
         ]
         (List.concat
@@ -238,12 +251,12 @@ viewMainMarks tables games model =
                         ]
                         []
                 )
-                (List.range 0 (tables - 1))
+                (List.range 0 (numRows - 1))
             , List.map
-                (\( table, game ) ->
+                (\( row, game ) ->
                     H.div
                         [ cssClasses.mark
-                        , gridArea (table + 1) (game + 1) (table + 2) -1
+                        , gridArea (row + 1) (game + 1) (row + 2) -1
                         ]
                         []
                 )
@@ -259,11 +272,11 @@ viewMainMarks tables games model =
 
                 _ ->
                     []
-            , case [ model.currTable, model.currGame ] of
-                [ Just table, Just game ] ->
+            , case [ model.currRow, model.currGame ] of
+                [ Just row, Just game ] ->
                     [ H.div
                         [ cssClasses.curr
-                        , gridArea (table + 1) (game + 1) (table + 2) (game + 2)
+                        , gridArea (row + 1) (game + 1) (row + 2) (game + 2)
                         ]
                         []
                     ]
@@ -275,8 +288,8 @@ viewMainMarks tables games model =
 
 
 viewLeftMarks : Int -> Model -> H.Html m
-viewLeftMarks tables model =
-    H.div [ cssClasses.left, gridFixedRows tables ]
+viewLeftMarks numRows model =
+    H.div [ cssClasses.left, gridFixedRows numRows ]
         (List.concat
             [ List.map
                 (\table ->
@@ -286,12 +299,12 @@ viewLeftMarks tables model =
                         ]
                         []
                 )
-                (List.range 0 (tables - 1))
-            , case model.currTable of
-                Just table ->
+                (List.range 0 (numRows - 1))
+            , case model.currRow of
+                Just row ->
                     [ H.div
                         [ cssClasses.currTable
-                        , gridArea (table + 1) 1 (table + 2) -1
+                        , gridArea (row + 1) 1 (row + 2) -1
                         ]
                         []
                     ]
@@ -303,10 +316,10 @@ viewLeftMarks tables model =
 
 
 viewRightMarks : Int -> Model -> H.Html m
-viewRightMarks tables model =
+viewRightMarks numRows model =
     H.div
         [ cssClasses.right
-        , gridFixedRows tables
+        , gridFixedRows numRows
         , gridFixedColumns (xif model.showRanks 3 2)
         ]
         (List.concat
@@ -318,7 +331,7 @@ viewRightMarks tables model =
                         ]
                         []
                 )
-                (List.range 0 (tables - 1))
+                (List.range 0 (numRows - 1))
             , List.map
                 (\table ->
                     H.div
@@ -328,11 +341,11 @@ viewRightMarks tables model =
                         []
                 )
                 model.markTables
-            , case model.currTable of
-                Just table ->
+            , case model.currRow of
+                Just row ->
                     [ H.div
                         [ cssClasses.currTable
-                        , gridArea (table + 1) 1 (table + 2) 2
+                        , gridArea (row + 1) 1 (row + 2) 2
                         ]
                         []
                     ]
@@ -343,10 +356,16 @@ viewRightMarks tables model =
         )
 
 
-viewMain : Scores -> H.Html m
-viewMain scores =
+viewMain : List Int -> Scores -> H.Html m
+viewMain rows scores =
     H.div [ cssClasses.main ]
-        (Array.indexedMap viewMainRow scores.values |> Array.toList)
+        (List.filterMap
+            (\row ->
+                Array.get row scores.values
+                    |> Maybe.map (\vs -> viewMainRow row vs)
+            )
+            rows
+        )
 
 
 viewMainRow : Int -> Array Int -> H.Html m
@@ -369,29 +388,29 @@ viewMainCell table game value =
         ]
 
 
-viewLeft : Int -> H.Html m
-viewLeft tables =
+viewLeft : List Int -> H.Html m
+viewLeft rows =
     H.div [ cssClasses.left ]
         [ H.div [ cssClasses.tables ]
-            (List.map (\i -> viewWide "table" i (i + 1)) (List.range 0 (tables - 1)))
+            (List.map (\i -> viewWide "table" i (i + 1)) rows)
         ]
 
 
-viewRight : Array Int -> Maybe (Array Int) -> H.Html m
-viewRight totals ranks =
+viewRight : List Int -> Array Int -> Maybe (Array Int) -> H.Html m
+viewRight rows totals ranks =
     H.div [ cssClasses.right ]
         (List.concat
             [ [ H.div
                     [ cssClasses.tables ]
-                    (Array.indexedMap (\i _ -> viewWide "table" i (i + 1)) totals |> Array.toList)
+                    (rows |> List.map (\t -> viewWide "table" t (t + 1)))
               , H.div
                     [ cssClasses.totals ]
-                    (Array.indexedMap (viewWide "total") totals |> Array.toList)
+                    (rows |> List.map (\t -> viewWide "total" t (Array.get t totals |> Maybe.withDefault 0)))
               ]
             , case ranks of
                 Just rs ->
                     [ H.div [ cssClasses.ranks ]
-                        (Array.indexedMap (viewRank "rank") rs |> Array.toList)
+                        (rows |> List.map (\t -> viewRank "rank" t (Array.get t rs |> Maybe.withDefault 0)))
                     ]
 
                 _ ->
@@ -578,6 +597,12 @@ update msg options model =
         Blurred ->
             ( model, Cmd.none )
 
+        HideTable ->
+            ( updateHideTable model, Cmd.none )
+
+        ShowTable ->
+            ( updateShowTable model, Cmd.none )
+
         Escaped ->
             ( clearSelection model
             , Task.attempt (\_ -> options.route Blurred) (Browser.Dom.blur "sheet")
@@ -620,15 +645,28 @@ updateTablePressed table options model =
     let
         cleared =
             clearSelection model
+
+        row =
+            findRowForTable table model
     in
     case model.currGame of
         Just game ->
-            ( { cleared | currGame = Just game, currTable = Just table, panelGame = game }
+            ( { cleared
+                | currGame = Just game
+                , currRow = row
+                , currTable = Just table
+                , panelGame = game
+              }
             , sendMessage (options.onIncrement table game)
             )
 
         Nothing ->
-            ( { cleared | currTable = Just table }, Cmd.none )
+            ( { cleared
+                | currRow = row
+                , currTable = Just table
+              }
+            , Cmd.none
+            )
 
 
 updateGamePressed : Int -> Model -> Model
@@ -648,14 +686,13 @@ updateRankPressed table options model =
 
         explain =
             Scores.explain options.scores table
+                |> Array.toList
+                |> List.filterMap (\( t, g ) -> findRowForTable t model |> Maybe.map (\r -> ( r, g )))
 
         markTables =
-            Array.map Tuple.first explain |> Array.toList
-
-        markTies =
-            explain |> Array.toList
+            List.map Tuple.first explain
     in
-    { cleared | markTables = markTables, markTies = markTies }
+    { cleared | markTables = markTables, markTies = explain }
 
 
 updateValuePressed : Int -> Int -> Options m -> Model -> ( Model, Cmd m )
@@ -663,15 +700,68 @@ updateValuePressed table game options model =
     let
         cleared =
             clearSelection model
+
+        row =
+            findRowForTable table model
     in
-    ( { cleared | currTable = Just table, currGame = Just game, panelGame = game }
+    ( { cleared
+        | currRow = row
+        , currTable = Just table
+        , currGame = Just game
+        , panelGame = game
+      }
     , sendMessage (options.onIncrement table game)
     )
+
+
+updateHideTable : Model -> Model
+updateHideTable model =
+    let
+        cleared =
+            clearSelection model
+
+        hideTables =
+            case model.currTable of
+                Just t ->
+                    if List.member t model.hideTables then
+                        model.hideTables
+
+                    else
+                        List.sort (t :: model.hideTables)
+
+                Nothing ->
+                    model.hideTables
+    in
+    { cleared | hideTables = hideTables }
+
+
+updateShowTable : Model -> Model
+updateShowTable model =
+    let
+        cleared =
+            clearSelection model
+    in
+    { cleared | hideTables = [] }
+
+
+findRowForTable : Int -> Model -> Maybe Int
+findRowForTable table model =
+    if List.member table model.hideTables then
+        Nothing
+
+    else
+        table - (model.hideTables |> List.filter (\t -> t < table) |> List.length) |> Just
 
 
 handleKeyDown : KeyboardEvent -> Options m -> Model -> Maybe m
 handleKeyDown event options _ =
     case event.key of
+        "h" ->
+            Just (options.route HideTable)
+
+        "H" ->
+            Just (options.route ShowTable)
+
         "-" ->
             Just (options.route ZoomOut)
 
@@ -691,7 +781,8 @@ handleKeyDown event options _ =
 clearSelection : Model -> Model
 clearSelection model =
     { model
-        | currTable = Nothing
+        | currRow = Nothing
+        , currTable = Nothing
         , currGame = Nothing
         , markTables = []
         , markTies = []
