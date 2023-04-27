@@ -9,8 +9,8 @@ jobs:
   build_win:
     runs-on: windows-2019
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
           node-version: "16"
       - run: yarn install
@@ -23,7 +23,7 @@ jobs:
           cp dist/latest.yml dist/win
           cp dist/*.exe dist/win
           cp dist/*.exe.blockmap dist/win
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: "Windows"
           path: "dist/win"
