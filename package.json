@@ -21,6 +21,7 @@
       "@babel/plugin-transform-modules-commonjs"
     ]
   },
+  "packageManager": "yarn@1.22.19",
   "dependencies": {
     "electron-updater": "^5.3.0"
   },
