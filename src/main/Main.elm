@@ -3,7 +3,7 @@ port module Main exposing (Model, main)
 import Array
 import Browser
 import Browser.Events
-import Common exposing (KeyboardEvent, arrayGet2, decodeKeyboardEvent, isJust, listJust)
+import Common exposing (KeyboardEvent, arrayGet2, decodeKeyboardEvent, isJust, listJust, xif)
 import Html as H
 import Html.Attributes as HA
 import Html.Events as HE
@@ -20,6 +20,7 @@ port onDocumentKeyDown : (String -> msg) -> Sub msg
 
 
 port storage : JD.Value -> Cmd msg
+
 
 type alias Flags =
     { languages : List String
@@ -51,6 +52,7 @@ type Msg
     | ErrorClosed
     | SheetIncremented Int Int
     | SheetSet Int Int Int
+    | SheetClearGame Int
     | SheetSetup
     | SetupClosed Scores
     | ShowLicenses
@@ -291,6 +293,13 @@ update msg model =
             in
             ( { model | scores = scores }, sendToStorage model.locale scores )
 
+        SheetClearGame game ->
+            let
+                scores =
+                    Scores.indexedMap (\_ g v -> xif (g == game) 0 v) model.scores
+            in
+            ( { model | scores = scores }, Cmd.none )
+
         SheetSetup ->
             let
                 ( setup, cmd ) =
@@ -363,6 +372,7 @@ subscriptions model =
         , onDocumentKeyDown (\k -> Maybe.withDefault Noop (handleKeyDown model k))
         ]
 
+
 handleKeyDown : Model -> String -> Maybe Msg
 handleKeyDown model key =
     case model.error of
@@ -389,6 +399,7 @@ sheetOptions model =
     , route = SheetMsg
     , onIncrement = SheetIncremented
     , onSet = SheetSet
+    , onClearGame = SheetClearGame
     , onSetup = SheetSetup
     }
 

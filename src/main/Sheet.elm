@@ -20,6 +20,7 @@ type alias Options m =
     , route : Msg -> m
     , onIncrement : Int -> Int -> m
     , onSet : Int -> Int -> Int -> m
+    , onClearGame: Int -> m
     , onSetup : m
     }
 
@@ -50,6 +51,7 @@ type Msg
     | ValuePressed Int Int
     | MoveCurrent Int Int
     | ValueSet Int Int Int
+    | ClearGame Int
     | Focused
     | Blurred
     | HideTable
@@ -600,6 +602,9 @@ update msg options model =
         ValueSet table game value ->
             updateValueSet table game value options model
 
+        ClearGame game ->
+            updateClearGame game options model
+
         Focused ->
             ( model, Cmd.none )
 
@@ -812,6 +817,10 @@ updateValueSet table game value options model =
     , sendMessage (options.onSet table game value)
     )
 
+updateClearGame : Int -> Options m -> Model -> (Model, Cmd m)
+updateClearGame game options model =
+    (model, sendMessage (options.onClearGame game))
+
 
 updateHideTable : Model -> Model
 updateHideTable model =
@@ -909,6 +918,8 @@ handleNumberDown value options model =
     case ( model.currTable, model.currGame ) of
         ( Just table, Just game ) ->
             Just (options.route (ValueSet table game value))
+        ( Nothing, Just game) ->
+            Just (options.route (ClearGame game))
 
         _ ->
             Nothing
