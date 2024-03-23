@@ -19,6 +19,7 @@ type alias Options m =
     , scores : Scores
     , route : Msg -> m
     , onIncrement : Int -> Int -> m
+    , onSet : Int -> Int -> Int -> m
     , onSetup : m
     }
 
@@ -47,6 +48,8 @@ type Msg
     | GamePressed Int
     | RankPressed Int
     | ValuePressed Int Int
+    | MoveCurrent Int Int
+    | ValueSet Int Int Int
     | Focused
     | Blurred
     | HideTable
@@ -591,6 +594,12 @@ update msg options model =
         ValuePressed table game ->
             updateValuePressed table game options model
 
+        MoveCurrent tableChange gameChange ->
+            updateMoveCurrent tableChange gameChange options model
+
+        ValueSet table game value ->
+            updateValueSet table game value options model
+
         Focused ->
             ( model, Cmd.none )
 
@@ -714,6 +723,96 @@ updateValuePressed table game options model =
     )
 
 
+updateMoveCurrent : Int -> Int -> Options m -> Model -> ( Model, Cmd m )
+updateMoveCurrent tableChange gameChange options model =
+    let
+        cleared =
+            clearSelection model
+
+        pickTable start dir =
+            let
+                candidates =
+                    case start of
+                        Just startTable ->
+                            if dir > 0 then
+                                List.range (startTable + 1) (options.scores.tables - 1)
+
+                            else if dir < 0 then
+                                List.range 0 (startTable - 1)
+                                    |> List.reverse
+
+                            else
+                                [ startTable ]
+
+                        Nothing ->
+                            if dir > 0 then
+                                List.range 0 (options.scores.tables - 1)
+
+                            else if dir < 0 then
+                                List.range 0 (options.scores.tables - 1)
+                                    |> List.reverse
+
+                            else
+                                []
+            in
+            candidates
+                |> List.filter (\i -> not (List.member i model.hideTables))
+                |> List.head
+
+        pickGame start dir =
+            case start of
+                Just startGame ->
+                    if (startGame + dir) >= 0 && (startGame + dir) < options.scores.games then
+                        Just (startGame + dir)
+
+                    else
+                        Nothing
+
+                Nothing ->
+                    if dir > 0 then
+                        Just 0
+
+                    else if dir < 0 then
+                        Just (options.scores.games - 1)
+
+                    else
+                        Nothing
+
+        table =
+            pickTable model.currTable tableChange
+
+        game =
+            pickGame model.currGame gameChange
+    in
+    ( { cleared
+        | currRow = Maybe.andThen (\t -> findRowForTable t model) table
+        , currTable = table
+        , currGame = game
+        , panelGame = Maybe.withDefault model.panelGame game
+      }
+    , Cmd.none
+    )
+
+
+updateValueSet : Int -> Int -> Int -> Options m -> Model -> ( Model, Cmd m )
+updateValueSet table game value options model =
+    let
+        cleared =
+            clearSelection model
+
+        row =
+            findRowForTable table model
+    in
+    ( { cleared
+        | currRow = row
+        , currTable = Just table
+        , currGame = Just game
+        , panelGame = game
+      }
+    , sendMessage (options.onSet table game value)
+    )
+
+
 updateHideTable : Model -> Model
 updateHideTable model =
     let
@@ -753,9 +852,9 @@ findRowForTable table model =
         table - (model.hideTables |> List.filter (\t -> t < table) |> List.length) |> Just
 
 
-handleKeyDown : KeyboardEvent -> Options m -> Model -> Maybe m
-handleKeyDown event options _ =
-    case event.key of
+handleKeyDown : String -> Options m -> Model -> Maybe m
+handleKeyDown key options model =
+    case key of
         "h" ->
             Just (options.route HideTable)
 
@@ -773,6 +872,43 @@ handleKeyDown event options _ =
 
         "Escape" ->
             Just (options.route Escaped)
+
+        "ArrowDown" ->
+            Just (options.route (MoveCurrent 1 0))
+
+        "ArrowUp" ->
+            Just (options.route (MoveCurrent -1 0))
+
+        "ArrowLeft" ->
+            Just (options.route (MoveCurrent 0 -1))
+
+        "ArrowRight" ->
+            Just (options.route (MoveCurrent 0 1))
+
+        "0" ->
+            handleNumberDown 0 options model
+
+        "1" ->
+            handleNumberDown 1 options model
+
+        "2" ->
+            handleNumberDown 2 options model
+
+        "3" ->
+            handleNumberDown 3 options model
+
+        "4" ->
+            handleNumberDown 4 options model
+
+        _ ->
+            Nothing
+
+
+handleNumberDown : Int -> Options m -> Model -> Maybe m
+handleNumberDown value options model =
+    case ( model.currTable, model.currGame ) of
+        ( Just table, Just game ) ->
+            Just (options.route (ValueSet table game value))
 
         _ ->
             Nothing

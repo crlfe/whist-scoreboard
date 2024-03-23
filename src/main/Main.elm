@@ -16,8 +16,10 @@ import Sheet
 import Ui.Dialog
 
 
-port storage : JD.Value -> Cmd msg
+port onDocumentKeyDown : (String -> msg) -> Sub msg
 
+
+port storage : JD.Value -> Cmd msg
 
 type alias Flags =
     { languages : List String
@@ -43,10 +45,12 @@ type alias Model =
 
 
 type Msg
-    = SheetMsg Sheet.Msg
+    = Noop
+    | SheetMsg Sheet.Msg
     | SetupMsg Setup.Msg
     | ErrorClosed
     | SheetIncremented Int Int
+    | SheetSet Int Int Int
     | SheetSetup
     | SetupClosed Scores
     | ShowLicenses
@@ -252,6 +256,9 @@ viewError model error =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Noop ->
+            ( model, Cmd.none )
+
         SheetMsg m ->
             Sheet.update m (sheetOptions model) model.sheet
                 |> Tuple.mapFirst (\s -> { model | sheet = s })
@@ -276,6 +283,13 @@ update msg model =
             ( { model | scores = scores }
             , sendToStorage model.locale scores
             )
+
+        SheetSet table game value ->
+            let
+                scores =
+                    Scores.set table game value model.scores
+            in
+            ( { model | scores = scores }, sendToStorage model.locale scores )
 
         SheetSetup ->
             let
@@ -345,38 +359,23 @@ sendToStorage locale scores =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Browser.Events.onKeyDown (decodeKeyDown model)
-        , Browser.Events.onResize WindowResized
+        [ Browser.Events.onResize WindowResized
+        , onDocumentKeyDown (\k -> Maybe.withDefault Noop (handleKeyDown model k))
         ]
 
-
-decodeKeyDown : Model -> JD.Decoder Msg
-decodeKeyDown model =
-    decodeKeyboardEvent
-        |> JD.andThen
-            (\event ->
-                case handleKeyDown model event of
-                    Just msg ->
-                        JD.succeed msg
-
-                    Nothing ->
-                        JD.fail "ignored input"
-            )
-
-
-handleKeyDown : Model -> KeyboardEvent -> Maybe Msg
-handleKeyDown model event =
+handleKeyDown : Model -> String -> Maybe Msg
+handleKeyDown model key =
     case model.error of
         Just _ ->
-            Ui.Dialog.handleKeyDown event (errorOptions model)
+            Ui.Dialog.handleKeyDown key (errorOptions model)
 
         Nothing ->
             case model.setup of
                 Just setup ->
-                    Setup.handleKeyDown event (setupOptions model) setup
+                    Setup.handleKeyDown key (setupOptions model) setup
 
                 Nothing ->
-                    Sheet.handleKeyDown event (sheetOptions model) model.sheet
+                    Sheet.handleKeyDown key (sheetOptions model) model.sheet
 
 
 sheetOptions : Model -> Sheet.Options Msg
@@ -389,6 +388,7 @@ sheetOptions model =
     , scores = model.scores
     , route = SheetMsg
     , onIncrement = SheetIncremented
+    , onSet = SheetSet
     , onSetup = SheetSetup
     }
 

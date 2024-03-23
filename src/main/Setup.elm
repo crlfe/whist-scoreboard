@@ -548,9 +548,9 @@ toScores model =
     }
 
 
-handleKeyDown : KeyboardEvent -> Options m -> Model -> Maybe m
-handleKeyDown event options _ =
-    case event.key of
+handleKeyDown : String -> Options m -> Model -> Maybe m
+handleKeyDown key options _ =
+    case key of
         "Escape" ->
             Just (options.route CancelClicked)
 

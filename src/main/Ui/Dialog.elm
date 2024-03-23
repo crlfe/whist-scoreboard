@@ -114,9 +114,9 @@ viewFooter options =
     [ H.footer [] options.footer ]
 
 
-handleKeyDown : KeyboardEvent -> Options m -> Maybe m
-handleKeyDown event options =
-    case event.key of
+handleKeyDown : String -> Options m -> Maybe m
+handleKeyDown key options =
+    case key of
         "Escape" ->
             options.onClose
 
