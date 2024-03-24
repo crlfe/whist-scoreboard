@@ -33,10 +33,14 @@ var app = Elm.Main.init({
 app.ports.storage.subscribe(function (data) {
   localStorage.setItem(localName, JSON.stringify(data));
 });
+
+var capturedKeys = [];
+app.ports.capturedKeys.subscribe(function (names) {
+  capturedKeys = names;
+});
 document.addEventListener("keydown", function (evt) {
   app.ports.onDocumentKeyDown.send(evt.key);
-  // TODO: preventDefault for arrow keys only when focused on the sheet.
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(evt.key)) {
+  if (capturedKeys.includes(evt.key)) {
     evt.preventDefault();
   }
 });

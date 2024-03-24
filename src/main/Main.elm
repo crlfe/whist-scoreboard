@@ -19,6 +19,9 @@ import Ui.Dialog
 port onDocumentKeyDown : (String -> msg) -> Sub msg
 
 
+port capturedKeys : JD.Value -> Cmd msg
+
+
 port storage : JD.Value -> Cmd msg
 
 
@@ -110,11 +113,11 @@ init flags =
                 Setup.init scores
         in
         ( { model | setup = Just setup }
-        , Cmd.map SetupMsg cmd
+        , Cmd.batch [ Cmd.map SetupMsg cmd, sendCapturedKeysNone ]
         )
 
     else
-        ( model, Cmd.none )
+        ( model, sendCapturedKeysForSheet )
 
 
 type alias Imported =
@@ -206,11 +209,7 @@ view model =
             [ Just (Sheet.view (sheetOptions model) model.sheet)
             , maybeViewBarrier model
             , Maybe.map (Setup.view (setupOptions model)) model.setup
-            , if model.showLicenses then
-                Just (viewLicenses model)
-
-              else
-                Nothing
+            , xif model.showLicenses (Just (viewLicenses model)) Nothing
             , Maybe.map (viewError model) model.error
             ]
     }
@@ -218,7 +217,7 @@ view model =
 
 maybeViewBarrier : Model -> Maybe (H.Html msg)
 maybeViewBarrier model =
-    if isJust model.setup || isJust model.error then
+    if isJust model.setup || model.showLicenses || isJust model.error then
         Just (H.div [ HA.class "barrier" ] [])
 
     else
@@ -275,7 +274,7 @@ update msg model =
                     ( model, Cmd.none )
 
         ErrorClosed ->
-            ( { model | error = Nothing }, Cmd.none )
+            ( { model | error = Nothing }, sendCapturedKeysForSheet )
 
         SheetIncremented table game ->
             let
@@ -306,22 +305,22 @@ update msg model =
                     Setup.init model.scores
             in
             ( { model | setup = Just setup }
-            , Cmd.map SetupMsg cmd
+            , Cmd.batch [ Cmd.map SetupMsg cmd, sendCapturedKeysNone ]
             )
 
         SetupClosed scores ->
             ( { model | scores = scores, setup = Nothing }
-            , sendToStorage model.locale scores
+            , Cmd.batch [ sendToStorage model.locale scores, sendCapturedKeysForSheet ]
             )
 
         ShowLicenses ->
-            ( { model | showLicenses = True }, Cmd.none )
+            ( { model | showLicenses = True }, sendCapturedKeysNone )
 
         HideLicenses ->
-            ( { model | showLicenses = False }, Cmd.none )
+            ( { model | showLicenses = False }, sendCapturedKeysForSheet )
 
         ShowError error ->
-            ( { model | error = Just error }, Cmd.none )
+            ( { model | error = Just error }, sendCapturedKeysNone )
 
         LocaleChanged locale ->
             ( { model
@@ -363,6 +362,16 @@ sendToStorage locale scores =
             , ( "values", JE.array (JE.array JE.int) scores.values )
             ]
         )
+
+
+sendCapturedKeysForSheet : Cmd Msg
+sendCapturedKeysForSheet =
+    capturedKeys (JE.list JE.string [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight" ])
+
+
+sendCapturedKeysNone : Cmd Msg
+sendCapturedKeysNone =
+    capturedKeys (JE.list JE.string [])
 
 
 subscriptions : Model -> Sub Msg
